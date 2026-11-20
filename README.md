@@ -66,7 +66,10 @@ packages alone or a complete minimal/desktop image.
 BIOS, x64 UEFI Secure Boot, IA32 UEFI, graphical installation to a disposable
 virtual disk and installed boot without USB have been tested under KVM/QEMU.
 Physical Intel/AMD hardware decode, KMS video planes, radio and tablet touch
-still need target-hardware validation. Desktop profile testing is separate.
+still need target-hardware validation. The unified preview is 1,120,000,000 bytes
+(1.12 GB), with 903,065,600 bytes used and 80,602,624 bytes free on the compressed
+native root before first-boot growth. Both the desktop and minimal mode, direct
+GRUB installer access, and graphical installation have passed VM checks.
 
 GPL-3.0; existing OpenHD boot assets and Devourer preparation policy originate
 from OpenHD-ImageBuilder. Component sources retain their upstream licenses.

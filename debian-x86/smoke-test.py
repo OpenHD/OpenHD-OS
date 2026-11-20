@@ -136,6 +136,12 @@ class Guest:
     def screenshot(self, name):
         self.qmp_command("screendump", {"filename": "/output/vm-test/" + name + ".png", "format": "png"})
 
+    def desktop_ui(self):
+        self.run("timeout 90 sh -c 'until pgrep -x xfce4-panel && pgrep -x xfdesktop; do sleep 1; done'", timeout=100)
+        time.sleep(15)
+        self.run("journalctl -b -u qopenhd --no-pager -n 80")
+        self.screenshot("openhd-os-desktop")
+
     def click(self, x, y):
         self.qmp_command("input-send-event", {"events": [
             {"type": "abs", "data": {"axis": "x", "value": int(x * 32767 / 1280)}},
@@ -191,8 +197,21 @@ def main():
     parser.add_argument("--builder", type=pathlib.Path, required=True)
     parser.add_argument("--output", type=pathlib.Path, required=True)
     parser.add_argument("--root", type=pathlib.Path, required=True)
+    parser.add_argument("--desktop-only", action="store_true")
     options = parser.parse_args()
     guest = Guest(options.builder, options.output, options.root)
+    if options.desktop_only:
+        try:
+            guest.start("uefi", installed=True)
+            guest.ready()
+            guest.desktop_ui()
+            guest.shutdown()
+        finally:
+            if guest.process and guest.process.poll() is None:
+                guest.process.terminate()
+                guest.process.wait(timeout=10)
+            guest.transcript.close()
+        return
     (guest.test / "boot-animation.png").unlink(missing_ok=True)
     try:
         guest.tool("qemu-img", "create", "-f", "qcow2", "-F", "raw", "-b",
@@ -280,8 +299,7 @@ def main():
             guest.ready()
             guest.run("grep -qw openhd.mode=desktop /proc/cmdline")
             guest.run("timeout 60 sh -c 'until pgrep -x xfce4-session; do sleep 1; done'", timeout=70)
-            time.sleep(3)
-            guest.screenshot("openhd-os-desktop")
+            guest.desktop_ui()
             guest.run("systemctl is-active qopenhd openhd openhd-sys-utils")
             guest.shutdown()
             print("PASS: unified image boots XFCE desktop and minimal QOpenHD from the same installation", flush=True)

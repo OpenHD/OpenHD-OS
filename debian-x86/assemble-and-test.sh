@@ -28,7 +28,10 @@ for path in work output; do
 done
 install -m755 "$here/assemble.sh" "$builder/assemble.sh"
 install -m755 "$here/compact-root.py" "$builder/compact-root.py"
-if [[ ${2:-} != --test-only ]]; then chroot "$builder" /bin/bash /assemble.sh /work; fi
+if [[ ${2:-} != --test-only && ${2:-} != --desktop-test ]]; then chroot "$builder" /bin/bash /assemble.sh /work; fi
+if [[ ${2:-} == --desktop-test ]]; then
+    python3 "$here/smoke-test.py" --builder "$builder" --root "$work/root" --output "$work/output" --desktop-only
+fi
 if [[ ${2:-} == --test || ${2:-} == --test-only ]]; then
     chroot "$builder" apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
     python3 "$here/smoke-test.py" --builder "$builder" --root "$work/root" --output "$work/output"
