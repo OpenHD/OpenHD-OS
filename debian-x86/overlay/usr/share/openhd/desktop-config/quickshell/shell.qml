@@ -26,22 +26,10 @@ ShellRoot {
 
     PanelWindow {
         anchors { top: true; left: true; right: true; bottom: true }
-        color: "#020711"
+        color: "#010409"
         exclusiveZone: 0
         WlrLayershell.layer: WlrLayer.Background
-        Image {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: parent.height * 0.02
-            width: Math.min(parent.width * 0.65, parent.height * 0.50 * 1365 / 768)
-            height: width * 768 / 1365
-            source: "file:///usr/share/backgrounds/openhd-3.0.png"
-            sourceSize.width: 1365
-            sourceSize.height: 768
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            mipmap: true
-        }
+        AlbatrossBackdrop { anchors.fill: parent }
     }
 
     Process {
