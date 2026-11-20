@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+if grep -qw openhd.mode=desktop /proc/cmdline && [ -x /usr/bin/startxfce4 ]; then
+    unset QT_QPA_PLATFORM QT_QPA_EGLFS_INTEGRATION QT_QPA_EGLFS_KMS_ATOMIC QOPENHD_X86_KMS QOPENHD_BOOT_ANIMATION
+    export QT_QPA_PLATFORM=xcb
+    exec dbus-run-session -- startx /usr/bin/startxfce4 -- :0 vt1 -keeptty -nolisten tcp
+fi
+exec /usr/local/sbin/openhd-display

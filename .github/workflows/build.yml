@@ -1,0 +1,74 @@
+name: Build Debian image or component packages
+on:
+  workflow_dispatch:
+    inputs:
+      output:
+        type: choice
+        options: [packages, minimal-image, desktop-image]
+        default: packages
+      openhd_ref:
+        default: openhd-3.0
+      qopenhd_ref:
+        default: dev-release
+      sysutils_ref:
+        default: dev-release
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: OpenHD/OpenHD
+          ref: ${{ inputs.openhd_ref }}
+          path: sources/OpenHD
+          submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          repository: OpenHD/QOpenHD
+          ref: ${{ inputs.qopenhd_ref }}
+          path: sources/QOpenHD
+          submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          repository: OpenHD/OpenHD-SysUtils
+          ref: ${{ inputs.sysutils_ref }}
+          path: sources/OpenHD-SysUtils
+          submodules: recursive
+      - name: Prepare Debian component sources
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mmdebstrap rsync gnupg curl
+          git -C sources/QOpenHD apply ../../patches/qopenhd-debian-x86.patch
+          git -C sources/OpenHD-SysUtils apply ../../patches/sysutils-config-mount.patch
+          python3 debian-x86/export-sources.py sources sources.tar.gz
+          sudo bash debian-x86/bootstrap-builder.sh /opt/openhd-os-work sources.tar.gz
+      - name: Build image
+        if: inputs.output != 'packages'
+        env:
+          PROFILE: ${{ inputs.output }}
+        run: |
+          sudo bash debian-x86/make-root.sh /opt/openhd-os-work
+          if [ "$PROFILE" = desktop-image ]; then
+            sudo bash debian-x86/add-desktop.sh /opt/openhd-os-work
+            sudo env IMAGE_BYTES=1499987968 bash debian-x86/assemble-and-test.sh /opt/openhd-os-work --test
+          else
+            sudo bash debian-x86/assemble-and-test.sh /opt/openhd-os-work --test
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debian-amd64-packages
+          path: /opt/openhd-os-work/builder/packages/*.deb
+      - uses: actions/upload-artifact@v4
+        if: inputs.output != 'packages'
+        with:
+          name: ${{ inputs.output }}
+          path: |
+            /opt/openhd-os-work/output/*.img
+            /opt/openhd-os-work/output/SHA256SUMS
+            /opt/openhd-os-work/output/*report.txt
+            /opt/openhd-os-work/output/packages.tsv
+          retention-days: 7

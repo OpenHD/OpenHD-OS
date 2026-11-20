@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# Native disk-to-disk installation. Never writes a disk without local confirmation.
+set -euo pipefail
+usage() {
+    echo 'Usage: openhd-install --list | --target /dev/DISK [--dry-run]'
+}
+[[ $EUID == 0 ]] || { echo 'Run from the local root maintenance console.' >&2; exit 1; }
+target=''
+dry_run=false
+profile=minimal
+while (($#)); do
+    case "$1" in
+        --list) lsblk -d -o NAME,PATH,SIZE,MODEL,SERIAL,TRAN,RO; exit 0 ;;
+        --target) target=${2:?Missing disk path}; shift ;;
+        --dry-run) dry_run=true ;;
+        --profile) profile=${2:?Missing profile}; shift ;;
+        *) usage; exit 1 ;;
+    esac
+    shift
+done
+[[ "$profile" == minimal || "$profile" == desktop ]] || { echo 'Unknown installation profile.' >&2; exit 1; }
+[[ "$profile" != desktop || -x /usr/bin/startxfce4 ]] || { echo 'Use the OpenHD-OS desktop image for desktop installation.' >&2; exit 1; }
+[[ -n "$target" ]] || { usage; exit 1; }
+target=$(readlink -f -- "$target")
+[[ -b "$target" && $(lsblk -dn -o TYPE "$target") == disk ]] || {
+    echo 'Select a whole physical disk, not a partition.' >&2; exit 1;
+}
+[[ $(blockdev --getro "$target") == 0 ]] || { echo 'Disk is read-only.' >&2; exit 1; }
+# Reject the source, any mounted descendants, and active swap/LVM/crypt holders.
+if lsblk -nr -o MOUNTPOINTS "$target" | grep -q '[^[:space:]]'; then
+    echo 'Refusing a disk with mounted filesystems or active swap (including the running system).' >&2
+    exit 1
+fi
+if lsblk -nr -o TYPE "$target" | grep -Eq '^(crypt|lvm|raid|md|mpath)'; then
+    echo 'Refusing a disk with active storage holders.' >&2; exit 1
+fi
+[[ $(blockdev --getsize64 "$target") -ge 1073741824 ]] || {
+    echo 'Target must hold at least 1 GiB.' >&2; exit 1;
+}
+identity=$(lsblk -dn -o MAJ:MIN,SIZE,MODEL,SERIAL "$target")
+lsblk -d -o PATH,SIZE,MODEL,SERIAL,TRAN "$target"
+echo "All contents of $target will be erased. A normal writable OpenHD system will use the disk."
+if $dry_run; then
+    echo 'Dry run: validated target; no data has been changed.'
+    exit 0
+fi
+printf 'Type ERASE %s to install: ' "$target"
+read -r confirmation
+[[ "$confirmation" == "ERASE $target" ]] || { echo 'Cancelled.'; exit 1; }
+echo 'OPENHD_PROGRESS 3 Checking installation disk'
+# Recheck identity and mounts immediately before the first write.
+[[ -n "$identity" ]] || exit 1
+[[ "$identity" == "$(lsblk -dn -o MAJ:MIN,SIZE,MODEL,SERIAL "$target")" ]] || exit 1
+! lsblk -nr -o MOUNTPOINTS "$target" | grep -q '[^[:space:]]' || exit 1
+mountpoint=$(mktemp -d /run/openhd-install.XXXXXX)
+restart_services=()
+cleanup() {
+    umount -R "$mountpoint" 2>/dev/null || true
+    rmdir "$mountpoint" 2>/dev/null || true
+    if ((${#restart_services[@]})); then systemctl start "${restart_services[@]}" || true; fi
+}
+trap cleanup EXIT
+for service in qopenhd openhd openhd-sys-utils; do
+    if systemctl is-active --quiet "$service"; then
+        restart_services+=("$service")
+        systemctl stop "$service"
+    fi
+done
+echo 'OPENHD_PROGRESS 8 Creating disk partitions'
+wipefs -a "$target"
+sgdisk --zap-all --new=1:2048:+64M --typecode=1:0700 --change-name=1:OPENHD \
+    --new=2:0:+1M --typecode=2:ef02 \
+    --new=3:0:+64M --typecode=3:ef00 --new=4:0:0 --typecode=4:8300 "$target"
+partprobe "$target"
+udevadm settle
+separator=
+[[ "$target" =~ [0-9]$ ]] && separator=p
+config="${target}${separator}1"
+efi="${target}${separator}3"
+root="${target}${separator}4"
+[[ -b "$config" && -b "$efi" && -b "$root" ]] || exit 1
+echo 'OPENHD_PROGRESS 15 Formatting system and configuration partitions'
+mkfs.vfat -F32 -n OPENHD "$config"
+mkfs.vfat -F32 "$efi"
+mkfs.btrfs -f -m single "$root"
+mount -o compress-force=zstd:6,noatime "$root" "$mountpoint"
+echo 'OPENHD_PROGRESS 25 Copying OpenHD OS'
+rsync -aHAXx --numeric-ids --exclude=/dev/* --exclude=/proc/* --exclude=/sys/* \
+    --exclude=/run/* --exclude=/tmp/* --exclude=/boot/efi/* \
+    --exclude=/Config/* \
+    --exclude=/etc/openhd/root-expanded --exclude=/var/log/* / "$mountpoint/"
+mkdir -p "$mountpoint/boot/efi"
+rm -f "$mountpoint/etc/openhd/usb-welcome"
+mkdir -p "$mountpoint/Config"
+mount "$config" "$mountpoint/Config"
+echo 'OPENHD_PROGRESS 70 Copying your OpenHD configuration'
+rsync -rt /Config/ "$mountpoint/Config/"
+mount "$efi" "$mountpoint/boot/efi"
+root_uuid=$(blkid -s UUID -o value "$root")
+efi_uuid=$(blkid -s UUID -o value "$efi")
+config_uuid=$(blkid -s UUID -o value "$config")
+printf 'UUID=%s / btrfs defaults,compress-force=zstd:6,noatime 0 0\nUUID=%s /boot/efi vfat umask=0077 0 2\nUUID=%s /Config vfat defaults,umask=0077 0 2\n' \
+    "$root_uuid" "$efi_uuid" "$config_uuid" >"$mountpoint/etc/fstab"
+truncate -s0 "$mountpoint/etc/machine-id"
+rm -f "$mountpoint/var/lib/dbus/machine-id"
+for path in dev proc sys; do mount --rbind "/$path" "$mountpoint/$path"; mount --make-rslave "$mountpoint/$path"; done
+echo 'OPENHD_PROGRESS 80 Installing BIOS and EFI bootloaders'
+chroot "$mountpoint" grub-install --target=x86_64-efi --uefi-secure-boot --efi-directory=/boot/efi --removable --no-nvram
+chroot "$mountpoint" grub-install --target=i386-efi --no-uefi-secure-boot --efi-directory=/boot/efi --removable --no-nvram
+chroot "$mountpoint" grub-install --target=i386-pc "$target"
+chroot "$mountpoint" update-grub
+if [[ "$profile" == desktop ]]; then
+    sed -i 's/^GRUB_DEFAULT=.*/GRUB_DEFAULT=openhd-desktop/' "$mountpoint/etc/default/grub"
+    chroot "$mountpoint" update-grub
+fi
+touch "$mountpoint/etc/openhd/root-expanded"
+echo 'OPENHD_PROGRESS 95 Finishing disk writes'
+sync
+echo 'OPENHD_PROGRESS 100 Installation complete'
+echo 'Installation complete. Shut down, remove the USB drive, and boot from the installed disk.'

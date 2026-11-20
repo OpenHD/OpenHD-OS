@@ -1,0 +1,12 @@
+[Unit]
+Description=Use available capacity on the OpenHD system disk
+After=local-fs.target
+Before=openhd-sys-utils.service qopenhd.service
+ConditionPathExists=!/etc/openhd/root-expanded
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/openhd-grow-root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,35 @@
+[Unit]
+Description=QOpenHD
+After=systemd-udev-settle.service plymouth-start.service openhd-sys-utils.service openhd-installer.service
+RequiresMountsFor=/Config
+Wants=systemd-udev-settle.service
+Conflicts=getty@tty1.service autovt@tty1.service
+StartLimitIntervalSec=0
+ConditionKernelCommandLine=!openhd.console
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/openhd-session
+Environment=QT_QPA_PLATFORM=eglfs
+Environment=QT_QPA_EGLFS_INTEGRATION=eglfs_kms
+Environment=QT_QPA_EGLFS_KMS_ATOMIC=1
+Environment=QOPENHD_X86_KMS=1
+Environment=QOPENHD_BOOT_ANIMATION=1
+Environment=QT_QUICK_CONTROLS_STYLE=Material
+Environment=QT_QUICK_CONTROLS_MATERIAL_THEME=Dark
+Environment=QT_QUICK_CONTROLS_MATERIAL_ACCENT=#30c5ff
+Environment=XDG_RUNTIME_DIR=/run/qopenhd
+RuntimeDirectory=qopenhd
+RuntimeDirectoryMode=0700
+TTYPath=/dev/tty1
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+Environment=QSG_INFO=1
+TTYReset=yes
+TTYVHangup=yes
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

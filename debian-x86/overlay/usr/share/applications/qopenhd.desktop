@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=QOpenHD
+Exec=env QT_QPA_PLATFORM=xcb QOPENHD_X86_KMS=0 QOPENHD_BOOT_ANIMATION=0 /usr/local/bin/QOpenHD
+Icon=applications-multimedia
+Categories=AudioVideo;
+Terminal=false

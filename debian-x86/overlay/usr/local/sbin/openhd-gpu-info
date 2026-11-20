@@ -1,0 +1,19 @@
+#!/bin/sh
+# Report real hardware capabilities; a successful UI boot is not a decode test.
+set -u
+printf 'OpenHD graphics and video capability report\n'
+printf '\nDRM devices:\n'
+ls -l /dev/dri 2>/dev/null || true
+printf '\nSelected display configuration:\n'
+cat /run/qopenhd-x86-kms.json 2>/dev/null || true
+printf '\nVAAPI codec profiles (HEVC VLD is required for H.265 hardware decoding):\n'
+found=0
+for node in /dev/dri/renderD*; do
+    [ -e "$node" ] || continue
+    found=1
+    printf '\n%s\n' "$node"
+    vainfo --display drm --device "$node" 2>&1 || true
+done
+[ "$found" = 1 ] || printf 'No DRM render node detected. Hardware decoding unavailable.\n'
+printf '\nCurrent QOpenHD renderer and decoder logs:\n'
+journalctl -b -u qopenhd --no-pager 2>/dev/null | grep -Ei 'KMS|OpenGL|GL_VENDOR|GL_RENDERER|renderer|Video decoder|VAAPI|hardware|software' || true

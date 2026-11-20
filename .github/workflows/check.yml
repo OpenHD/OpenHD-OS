@@ -1,0 +1,19 @@
+name: Check image builder
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  scripts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check shell and Python sources
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          bash debian-x86/check.sh
+      - name: Compile graphical installer
+        run: |
+          sudo apt-get install -y cmake ninja-build qtbase5-dev
+          cmake -S debian-x86/installer -B /tmp/installer -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel
+          cmake --build /tmp/installer

@@ -1,0 +1,5 @@
+**/__pycache__/
+**/output/
+*.img
+*.qcow2
+*.deb

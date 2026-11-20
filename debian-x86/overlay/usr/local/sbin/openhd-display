@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-eglfs}"
+if grep -qw 'openhd.video=gl' /proc/cmdline; then export QOPENHD_X86_KMS=0; fi
+# ImageWriter can supply a QOpenHD INI in addition to SysUtils' settings.json.
+# Apply each distinct file once, preserving subsequent settings changed in the UI.
+backup=/Config/openhd/QOpenHD.conf
+stamp=/etc/openhd/qopenhd-import.sha256
+if [ -s "$backup" ]; then
+    checksum=$(sha256sum "$backup" | cut -d ' ' -f1)
+    previous=$(cat "$stamp" 2>/dev/null || true)
+    if [ "$checksum" != "$previous" ]; then
+        mkdir -p /root/.config/OpenHD /etc/openhd
+        install -m600 "$backup" /root/.config/OpenHD/QOpenHD.conf.new
+        mv -f /root/.config/OpenHD/QOpenHD.conf.new /root/.config/OpenHD/QOpenHD.conf
+        printf '%s\n' "$checksum" >"$stamp.new"
+        mv -f "$stamp.new" "$stamp"
+    fi
+fi
+# The image contains only the HUD. A desktop session can later use the same binary
+# through xcb/Wayland without changing any boot-time DRM configuration.
+exec /usr/local/bin/QOpenHD

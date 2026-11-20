@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.16)
+project(openhd_installer LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+find_package(Qt5 REQUIRED COMPONENTS Widgets)
+add_executable(openhd-installer main.cpp)
+target_link_libraries(openhd-installer PRIVATE Qt5::Widgets)
+target_compile_options(openhd-installer PRIVATE -Wall -Wextra -Wpedantic)
+install(TARGETS openhd-installer DESTINATION bin)

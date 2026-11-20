@@ -1,0 +1,18 @@
+diff --git a/src/sysutil_part.cpp b/src/sysutil_part.cpp
+index d702501..ccbd5e6 100644
+--- a/src/sysutil_part.cpp
++++ b/src/sysutil_part.cpp
+@@ -781,7 +781,12 @@ void mount_known_partitions() {
+     if (is_label(row.label, "openhd")) {
+       // /Config commonly lives on the boot/root disk. It stays hidden from
+       // storage management, but must still be mounted during startup.
+-      (void)mount_partition(device, "/Config", false);
++      // Respect an existing UUID-selected configuration mount. In particular,
++      // an installation USB and the internal disk can both be labelled OPENHD;
++      // stacking one over the other would import settings from the wrong disk.
++      if (!is_mountpoint("/Config")) {
++        (void)mount_partition(device, "/Config", false);
++      }
+     } else if (safe_devices.count(device) != 0 &&
+                is_label(row.label, "recordings") &&
+                !selected_video_mounted) {

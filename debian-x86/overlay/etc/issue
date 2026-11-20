@@ -1,0 +1,8 @@
+OpenHD OS / QOpenHD
+
+QOpenHD runs on Ctrl+Alt+F1.
+Local maintenance console: Ctrl+Alt+F2.
+Install to an internal disk: choose Install OpenHD OS in the boot menu.
+Configure Wi-Fi: nmtui
+Android devices: adb devices
+

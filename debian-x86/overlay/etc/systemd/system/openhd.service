@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenHD ground receiver
+After=NetworkManager.service openhd-sys-utils.service
+RequiresMountsFor=/Config
+StartLimitIntervalSec=0
+
+[Service]
+ExecStart=/usr/local/bin/openhd --ground
+Restart=always
+RestartSec=3
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target

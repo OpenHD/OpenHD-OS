@@ -1,0 +1,9 @@
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=1
+GRUB_TIMEOUT_STYLE=menu
+GRUB_RECORDFAIL_TIMEOUT=1
+GRUB_DISTRIBUTOR=OpenHD
+GRUB_CMDLINE_LINUX_DEFAULT="console=tty3 quiet splash loglevel=3 vt.global_cursor_default=0"
+GRUB_CMDLINE_LINUX="rootflags=compress-force=zstd:6"
+GRUB_DISABLE_OS_PROBER=true
+GRUB_TERMINAL_OUTPUT=console

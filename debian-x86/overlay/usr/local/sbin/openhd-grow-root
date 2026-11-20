@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=$(findmnt -n -o SOURCE /)
+root=${root%%\[*}
+parent=$(lsblk -n -o PKNAME "$root" | head -1)
+number=$(cat "/sys/class/block/${root##*/}/partition")
+[[ -n "$parent" && "$number" == 4 ]] || exit 1
+disk="/dev/$parent"
+# Only extend the last partition; preserve its start, identity and all existing data.
+sgdisk -e "$disk"
+if ! result=$(growpart "$disk" "$number" 2>&1); then
+    [[ "$result" == NOCHANGE:* ]] || { echo "$result" >&2; exit 1; }
+fi
+echo "$result"
+btrfs filesystem resize max /
+touch /etc/openhd/root-expanded

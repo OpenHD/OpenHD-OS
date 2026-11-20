@@ -1,0 +1,3 @@
+# OpenHD OS x86 configuration partition.
+# ImageWriter writes openhd/settings.json and optional openhd/QOpenHD.conf here.
+# Raspberry Pi firmware options in this file are not used by the x86 bootloader.
