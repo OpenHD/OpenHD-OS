@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Optional larger desktop image; the minimal image remains capped at 1 GiB.
 set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
 work=$(realpath "${1:?Usage: add-desktop.sh WORKDIR}")
 [[ $EUID == 0 && -f "$work/root/etc/debian_version" ]] || exit 1
 mount --rbind /dev "$work/root/dev"
