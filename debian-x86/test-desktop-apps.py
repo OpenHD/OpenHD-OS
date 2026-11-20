@@ -6,8 +6,10 @@ It never writes the base root, a physical disk, or a release artifact.
 """
 import argparse
 import importlib.util
+import json
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import time
@@ -66,7 +68,7 @@ def main():
         guest.read_until(rb"openhd login:")
         guest.ready()
         guest.desktop_ui()
-        launcher_apps = __import__("json").loads((work / "root/usr/share/openhd/launcher-apps.json").read_text())
+        launcher_apps = json.loads((work / "root/usr/share/openhd/launcher-apps.json").read_text())
         expected_launchers = ["qopenhd", "ardudeck", "kite-gc", "inav-configurator", "betaflight", "qgroundcontrol"]
         if [app["id"] for app in launcher_apps] != expected_launchers:
             raise RuntimeError("The launcher catalog is missing an expected app or has an unexpected order")
@@ -74,15 +76,22 @@ def main():
             raise RuntimeError("A launcher entry has no installed icon or executable")
         guest.run("test $(pgrep -xc qs) = 1 && ! pgrep -x waybar && ! pgrep -x wofi")
         guest.run("mount -t tmpfs -o size=768M tmpfs /home/openhd; chown openhd:openhd /home/openhd")
-        document = __import__("json").loads((work / "root/usr/share/openhd/desktop-apps.json").read_text())
-        for app in document["apps"]:
-            name = app["id"]
-            guest.run(f"for key in DISPLAY XAUTHORITY WAYLAND_DISPLAY XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS; do value=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | sed -n \"s/^$key=//p\"); export \"$key=$value\"; done; python3 -c 'import pathlib,subprocess; log=open(\"/run/{name}.log\",\"w\"); p=subprocess.Popen([\"runuser\",\"-u\",\"openhd\",\"--\",\"/usr/local/sbin/openhd-desktop-app\",\"{name}\"],stdout=log,stderr=subprocess.STDOUT,start_new_session=True); pathlib.Path(\"/run/{name}.pid\").write_text(str(p.pid))'")
+        for name in expected_launchers:
+            log = f"/run/user/1000/openhd-test-{name}.log"
+            pid = f"/run/user/1000/openhd-test-{name}.pid"
+            launch = f"echo $$ > {pid}; exec /usr/local/sbin/openhd-desktop-app {name} > {log} 2>&1"
+            dispatch = "hl.dsp.exec_cmd(" + json.dumps("setsid sh -c " + shlex.quote(launch)) + ")"
+            guest.run(
+                "signature=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | "
+                "sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p'); test -n \"$signature\" && "
+                "runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 "
+                f"HYPRLAND_INSTANCE_SIGNATURE=\"$signature\" hyprctl dispatch {shlex.quote(dispatch)}"
+            )
             time.sleep(12)
-            result = guest.run(f"cat /run/{name}.log; ps -u openhd -o pid,comm; kill -0 $(cat /run/{name}.pid)", expected=None)
+            result = guest.run(f"cat {log}; ps -u openhd -o pid,comm; kill -0 $(cat {pid})", expected=None)
             (guest.test / (name + ".log")).write_text(result)
             guest.screenshot(name)
-            guest.run(f"kill -TERM -- -$(cat /run/{name}.pid) || true")
+            guest.run(f"kill -TERM -- -$(cat {pid}) || true")
             if not re.search(r"OPENHD_TEST_[a-f0-9]+:0\r?\n", result):
                 raise RuntimeError("Application startup failed: " + name + "\n" + result)
             print("PASS: graphical application startup:", name, flush=True)

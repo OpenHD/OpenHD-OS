@@ -133,7 +133,14 @@ ShellRoot {
                 }
                 function launchSelected() {
                     if (filteredApps.length === 0) return
-                    Quickshell.execDetached(["/usr/local/sbin/openhd-desktop-app", filteredApps[selectedIndex].id])
+                    launchApp(filteredApps[selectedIndex].id)
+                }
+                function launchApp(appId) {
+                    if (!/^[a-z0-9-]+$/.test(appId)) return
+                    // Hyprland starts XWayland after the shell's startup hook.
+                    // Dispatch here so X11 apps inherit the current display.
+                    Quickshell.execDetached(["hyprctl", "dispatch",
+                        'hl.dsp.exec_cmd("/usr/local/sbin/openhd-desktop-app ' + appId + '")'])
                     shell.launcherOpen = false
                 }
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -224,8 +231,7 @@ ShellRoot {
                                 TapHandler {
                                     onTapped: {
                                         launcher.selectedIndex = index
-                                        Quickshell.execDetached(["/usr/local/sbin/openhd-desktop-app", modelData.id])
-                                        shell.launcherOpen = false
+                                        launcher.launchApp(modelData.id)
                                     }
                                 }
                             }
