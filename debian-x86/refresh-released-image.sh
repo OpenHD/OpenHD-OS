@@ -32,7 +32,7 @@ rm -f "$work/base/openhd-os-x86.img"
 # compiler. These development packages never enter the installed system.
 curl -fsSL https://ftp-master.debian.org/keys/archive-key-13.asc | gpg --dearmor >"$work/keys/trixie.gpg"
 mmdebstrap --architectures=amd64 --variant=minbase --keyring="$work/keys/trixie.gpg" \
-    --include=ca-certificates,file,build-essential,cmake,ninja-build,qtbase5-dev,btrfs-progs,dosfstools,mtools,gdisk,grub-pc-bin,grub-efi-amd64-bin,grub-efi-ia32-bin,grub2-common,qemu-system-x86,qemu-utils,ovmf,fonts-dejavu-core \
+    --include=ca-certificates,file,build-essential,cmake,ninja-build,qtbase5-dev,btrfs-progs,dosfstools,mtools,gdisk,grub-pc-bin,grub-efi-amd64-bin,grub-efi-ia32-bin,grub2-common,qemu-system-x86,qemu-utils,ovmf,ovmf-ia32,fonts-dejavu-core \
     trixie "$work/builder" "deb [signed-by=$work/keys/trixie.gpg] https://deb.debian.org/debian trixie main"
 mkdir -p "$work/builder/src/installer" "$work/builder/packages"
 cp "$here/installer/"* "$work/builder/src/installer/"
