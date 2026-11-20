@@ -38,6 +38,8 @@ jobs:
           ref: ${{ inputs.sysutils_ref }}
           path: sources/OpenHD-SysUtils
           submodules: recursive
+      - name: Initialize OpenHD ground receiver dependency
+        run: git -C sources/OpenHD submodule update --init --recursive OpenHD/ohd_interface/lib/devourer
       - name: Prepare Debian component sources
         run: |
           sudo apt-get update
