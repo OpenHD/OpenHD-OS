@@ -12,7 +12,7 @@ done
 shellcheck "$here/overlay/etc/grub.d/09_openhd"
 python3 -m py_compile "$here/"*.py
 python3 -m unittest discover -s "$here/tests" -p 'test_*.py'
-if command -v luac >/dev/null; then luac -p "$here/overlay/etc/xdg/hypr/hyprland.lua"; fi
+if command -v luac >/dev/null; then luac -p "$here/overlay/usr/share/openhd/desktop-config/hypr/hyprland.lua"; fi
 menu=$(mktemp)
 trap 'rm -f "$menu"' EXIT
 sh "$here/overlay/usr/local/sbin/openhd-grub-menu" test-root vmlinuz-test >"$menu"
