@@ -10,7 +10,7 @@ jobs:
       - name: Install preview tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends grub-common grub-pc-bin grub-efi-amd64-bin xorriso qemu-system-x86 fonts-dejavu-core
+          sudo apt-get install -y --no-install-recommends grub-common grub-pc-bin grub-efi-amd64-bin xorriso mtools qemu-system-x86 fonts-dejavu-core
       - name: Render actual GRUB menu in QEMU
         run: python3 debian-x86/preview-boot-menu.py /tmp/boot-preview
       - uses: actions/upload-artifact@v4
