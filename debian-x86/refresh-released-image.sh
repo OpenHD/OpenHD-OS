@@ -13,7 +13,16 @@ source_mount=$(mktemp -d)
 cleanup_source() { umount "$source_mount" 2>/dev/null || true; losetup -d "$loop"; rmdir "$source_mount"; }
 trap cleanup_source EXIT
 udevadm settle
-mount -o ro,nologreplay "${loop}p4" "$source_mount"
+file -s "${loop}p4"
+btrfs inspect-internal dump-super -f "${loop}p4" | head -n 24
+btrfs check --readonly "${loop}p4" >"$work/base/btrfs-check.txt" 2>&1 || {
+    cat "$work/base/btrfs-check.txt"
+    exit 1
+}
+mount -t btrfs -o ro,nologreplay "${loop}p4" "$source_mount" || {
+    dmesg | tail -n 80
+    exit 1
+}
 rsync -aHAXx --numeric-ids "$source_mount/" "$work/root/"
 cleanup_source
 trap - EXIT
