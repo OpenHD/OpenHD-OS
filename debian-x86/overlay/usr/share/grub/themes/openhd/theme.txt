@@ -1,0 +1,53 @@
+title-text: ""
+desktop-image: "background.png"
+desktop-color: "#0c141d"
+terminal-font: "DejaVu Sans Regular 20"
+terminal-left: "7%"
+terminal-top: "20%"
+terminal-width: "86%"
+terminal-height: "60%"
+
++ label {
+  left = 7%
+  top = 8%
+  width = 86%
+  height = 40
+  text = "OpenHD-OS"
+  font = "DejaVu Sans Regular 20"
+  color = "#30c5ef"
+}
++ label {
+  left = 7%
+  top = 17%
+  width = 86%
+  height = 32
+  text = "Choose your workspace"
+  font = "DejaVu Sans Regular 20"
+  color = "#c1d1dd"
+}
++ boot_menu {
+  left = 7%
+  top = 29%
+  width = 86%
+  height = 54%
+  item_font = "DejaVu Sans Regular 20"
+  item_color = "#b8c8d6"
+  selected_item_color = "#ffffff"
+  selected_item_pixmap_style = "selected_*.png"
+  item_height = 52
+  item_padding = 8
+  item_spacing = 6
+  icon_width = 40
+  icon_height = 40
+  item_icon_space = 18
+}
++ label {
+  id = "__timeout__"
+  left = 7%
+  top = 90%
+  width = 86%
+  height = 32
+  font = "DejaVu Sans Regular 20"
+  color = "#8299aa"
+  text = "Starting QOpenHD in %d seconds. Press an arrow key to choose."
+}

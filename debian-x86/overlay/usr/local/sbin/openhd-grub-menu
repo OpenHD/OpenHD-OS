@@ -2,23 +2,36 @@
 # One generator for initial images and all subsequent Debian kernel updates.
 set -eu
 uuid=${1:-$(grub-probe --target=fs_uuid /)}
+cat <<'GRAPHICS'
+insmod all_video
+insmod gfxterm
+insmod gfxmenu
+insmod png
+set gfxmode=auto
+if loadfont /usr/share/grub/themes/openhd/openhd.pf2; then
+    if terminal_output gfxterm; then
+        set theme=/usr/share/grub/themes/openhd/theme.txt
+        export theme
+    fi
+fi
+GRAPHICS
 kernel=${2:-$(find /boot -maxdepth 1 -name 'vmlinuz-*' | sort -V | tail -1)}
 kernel=${kernel#/boot/}
 version=${kernel#vmlinuz-}
 entry() {
     cat <<EOF
-menuentry '$1' --id '$2' {
+menuentry '$1' --id '$2' --class '$4' {
     search --no-floppy --fs-uuid --set=root $uuid
     linux /boot/$kernel root=UUID=$uuid rw rootflags=compress-force=zstd:6 console=tty3 quiet splash loglevel=3 vt.global_cursor_default=0 $3
     initrd /boot/initrd.img-$version
 }
 EOF
 }
-entry 'Start QOpenHD in minimal mode' openhd-minimal 'openhd.mode=minimal'
-entry 'Start OpenHD-OS' openhd-desktop 'openhd.mode=desktop'
-entry 'Install OpenHD minimal' openhd-install-minimal 'openhd.install openhd.profile=minimal'
-entry 'Install OpenHD-OS' openhd-install-desktop 'openhd.install openhd.profile=desktop'
-echo "submenu 'Advanced' --id openhd-advanced {"
-entry 'QOpenHD with compatible video' openhd-compatible 'openhd.mode=minimal openhd.video=gl'
-entry 'Maintenance console' openhd-console 'openhd.console'
+entry 'Start QOpenHD in minimal mode' openhd-minimal 'openhd.mode=minimal' minimal
+entry 'Start OpenHD-OS' openhd-desktop 'openhd.mode=desktop' desktop
+entry 'Install OpenHD minimal' openhd-install-minimal 'openhd.install openhd.profile=minimal' install
+entry 'Install OpenHD-OS' openhd-install-desktop 'openhd.install openhd.profile=desktop' install
+echo "submenu 'Advanced' --id openhd-advanced --class advanced {"
+entry 'QOpenHD with compatible video' openhd-compatible 'openhd.mode=minimal openhd.video=gl' minimal
+entry 'Maintenance console' openhd-console 'openhd.console' advanced
 echo '}'

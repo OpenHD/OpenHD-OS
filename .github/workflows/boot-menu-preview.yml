@@ -1,0 +1,19 @@
+name: Capture graphical boot menu
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install preview tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends grub-common grub-pc-bin grub-efi-amd64-bin xorriso qemu-system-x86 fonts-dejavu-core
+      - name: Render actual GRUB menu in QEMU
+        run: python3 debian-x86/preview-boot-menu.py /tmp/boot-preview
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openhd-boot-menu-screenshot
+          path: /tmp/boot-preview/openhd-boot-menu.png
