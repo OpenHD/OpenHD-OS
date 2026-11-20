@@ -11,4 +11,4 @@ export QT_QUICK_CONTROLS_MATERIAL_THEME=Dark
 export QT_QUICK_CONTROLS_MATERIAL_ACCENT='#73d7ee'
 export XCURSOR_THEME=Adwaita
 export XCURSOR_SIZE=24
-exec dbus-run-session -- Hyprland --config /etc/xdg/hypr/hyprland.lua
+exec dbus-run-session -- Hyprland --config /usr/share/openhd/desktop-config/hypr/hyprland.lua

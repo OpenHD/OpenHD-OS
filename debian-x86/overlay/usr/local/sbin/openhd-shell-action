@@ -5,7 +5,7 @@ case "${1:-}" in
         if pgrep -x wvkbd-mobintl >/dev/null; then pkill -x wvkbd-mobintl; else wvkbd-mobintl & fi
         ;;
     power)
-        choice=$(printf 'Restart\nShut down\nCancel\n' | wofi --dmenu --prompt 'Power' --width 350 --height 260 --style /etc/xdg/wofi/style.css) || exit 0
+        choice=$(printf 'Restart\nShut down\nCancel\n' | wofi --dmenu --prompt 'Power' --width 350 --height 260 --style /usr/share/openhd/desktop-config/wofi/style.css) || exit 0
         case "$choice" in
             Restart) systemctl reboot ;;
             'Shut down') systemctl poweroff ;;
