@@ -56,7 +56,7 @@ umount "$work/root/proc"
 umount -R "$work/root/dev"
 trap - EXIT
 bash "$here/add-desktop.sh" "$work"
-export IMAGE_BYTES=${IMAGE_BYTES:-2000000000}
+export IMAGE_BYTES=${IMAGE_BYTES:-2147483648}
 bash "$here/assemble-and-test.sh" "$work" --test
 bash "$here/test-app-root.sh" "$work"
 cp "$work/desktop-apps.lock.json" "$work/output/"

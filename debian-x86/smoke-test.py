@@ -137,7 +137,7 @@ class Guest:
         self.qmp_command("screendump", {"filename": "/output/vm-test/" + name + ".png", "format": "png"})
 
     def desktop_ui(self):
-        self.run("timeout 90 sh -c 'until pgrep -x Hyprland && pgrep -x waybar; do sleep 1; done'", timeout=100)
+        self.run("timeout 90 sh -c 'until pgrep -x Hyprland && pgrep -x qs; do sleep 1; done'", timeout=100)
         time.sleep(15)
         self.run("journalctl -b -u qopenhd --no-pager -n 80")
         self.screenshot("openhd-os-desktop")

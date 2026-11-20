@@ -2,8 +2,8 @@
 
 This builds a normal writable Debian 13 (trixie) installation for an amd64 PC.
 It boots directly into the production QOpenHD interface and runs the OpenHD ground
-receiver and SysUtils. The optional desktop adds XFCE while retaining minimal
-mode. There is no live system, compressed read-only root,
+receiver and SysUtils. The optional desktop adds a Hyprland and Quickshell OpenHD
+desktop while retaining minimal mode. There is no live system, compressed read-only root,
 or RAM overlay. Btrfs compresses ordinary files on the writable root filesystem.
 
 The distribution is presented as **OpenHD OS**: its own boot menu, console identity,
@@ -12,7 +12,7 @@ plays once before the flight HUD loads. Machine-readable `ID=debian` and the rea
 Debian codename/version remain available to package installers. Standard Debian
 repositories, `.deb` packages and `apt` are retained.
 
-The default disk-image budget is **1 GiB (1,073,741,824 bytes)**, including a BIOS
+The minimal image budget is **1 GiB (1,073,741,824 bytes)**; the desktop image targets **2 GiB (2,147,483,648 bytes)**. Both include a BIOS
 boot partition, 64 MiB configuration partition and 64 MiB EFI partition. The build fails if the compressed root
 does not fit with at least 64 MiB of initial headroom. `size-report.txt` records
 the actual result; the image is not silently enlarged to meet dependencies.
@@ -48,7 +48,33 @@ Ground mode explicitly enables Devourer, and packages SysUtils' device ownership
 rules. There are no replacement legacy broadcast Wi-Fi kernel drivers. Ordinary
 onboard Wi-Fi drivers remain available for management networking.
 
-## Display
+## OpenHD-OS desktop
+
+The optional desktop is a Hyprland session with a single Quickshell interface.
+It uses the supplied Albatross 3.0 wallpaper unchanged, a slim OpenHD-OS status
+bar, and a centered five-app launcher for QOpenHD, ArduDeck, Kite GCS, INAV and
+Betaflight. Search filters the installed launch entries; arrow keys and Enter
+launch the selected app, Escape hides the launcher, and Ctrl+Space opens it again.
+Flight tools are resolved from their installed `.desktop` launchers and refreshed
+from upstream stable releases by the image builder. QGroundControl is also
+installed and remains available from the applications list/search.
+
+The bar reads connectivity from NetworkManager, volume from PipeWire's `wpctl`,
+battery from the system's battery supply (hidden on desktops without one), and
+time from the system clock. Quickshell is installed from Debian 13 backports.
+Configuration is in `overlay/usr/share/openhd/desktop-config/quickshell/shell.qml`;
+launcher entries are generated from installed app launchers into
+`/usr/share/openhd/launcher-apps.json`. The same launcher can be opened with
+Ctrl+Space while another window is active. Ctrl+Alt+F2 opens the maintenance
+console; Ctrl+Alt+F1 returns to the graphical session.
+Tap the network indicator or press Super+N to open Wi-Fi/network settings; press
+Super+K to show the on-screen keyboard on touch devices.
+
+Hyprland and the Quickshell session use Wayland with XWayland for the installed
+Qt flight applications. QOpenHD in this desktop variant uses its X11 rendering
+path under XWayland; minimal mode remains the direct DRM/KMS path described below.
+
+## Minimal QOpenHD display
 
 The appliance uses Qt EGLFS directly on DRM/KMS, with no window manager. With a
 compatible NV12 primary plane and an ARGB overlay above it, QOpenHD puts the HUD
@@ -121,7 +147,7 @@ GRUB waits one second and defaults directly to **Start QOpenHD in minimal mode**
 Choose **Start OpenHD-OS** for the desktop, **Install OpenHD minimal** or
 **Install OpenHD-OS** for the graphical installer, or **Advanced** for compatible
 video and maintenance. The unified image includes both modes and is capped at
-1.5 GB; a minimal-only build remains 1 GiB.
+2 GiB; a minimal-only build remains 1 GiB.
 No terminal commands are required. The wizard lists disk model, size and serial,
 disables disks in use, and shows the selected disk again before erasing it.
 Two explicit acknowledgements enable the final **Erase disk and install** button.
@@ -152,5 +178,4 @@ filesystem UUID, copies the native installation and installs both EFI loaders an
 BIOS GRUB. Shut down and remove the USB drive to boot the internal installation.
 
 APT remains ordinary APT: `apt-get update`, then `apt-get install PACKAGE`.
-QGroundControl, ArduDeck, INAV and Betaflight belong to a later desktop variant;
-they are not part of this minimal image or its size budget.
+QGroundControl, ArduDeck, INAV and Betaflight are preinstalled in the desktop image.

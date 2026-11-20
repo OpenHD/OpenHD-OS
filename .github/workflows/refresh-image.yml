@@ -30,7 +30,7 @@ jobs:
           BASE_TAG: ${{ inputs.base_tag }}
         run: |
           set -o pipefail
-          sudo --preserve-env=GH_TOKEN,GITHUB_TOKEN env IMAGE_BYTES=2000000000 bash debian-x86/refresh-released-image.sh /opt/openhd-os-work "$BASE_TAG" 2>&1 | tee /tmp/openhd-image-build.log
+          sudo --preserve-env=GH_TOKEN,GITHUB_TOKEN env IMAGE_BYTES=2147483648 bash debian-x86/refresh-released-image.sh /opt/openhd-os-work "$BASE_TAG" 2>&1 | tee /tmp/openhd-image-build.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

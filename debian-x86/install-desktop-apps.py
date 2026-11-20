@@ -129,9 +129,30 @@ def main():
                     text = candidate.read_text()
                     text = "\n".join("Exec=/usr/local/sbin/openhd-desktop-app " + app["id"] if line.startswith("Exec=") else line for line in text.splitlines() if not line.startswith("NoDisplay=")) + "\n"
                     candidate.write_text(text.replace("[Desktop Entry]\n", "[Desktop Entry]\nNoDisplay=true\n", 1))
+        # Keep the launcher model tied to real installed desktop entries. QOpenHD
+        # is not one of the separately versioned flight-app downloads.
+        qopenhd_entry = root / "usr/share/applications/qopenhd.desktop"
+        qopenhd = configparser.ConfigParser(interpolation=None, strict=False)
+        qopenhd.read(qopenhd_entry)
+        if not qopenhd.has_section("Desktop Entry") or not qopenhd.has_option("Desktop Entry", "Exec"):
+            raise RuntimeError("QOpenHD desktop entry is missing its launch command")
+        qexec = [part for part in shlex.split(qopenhd["Desktop Entry"]["Exec"]) if part not in ("%U", "%u", "%F", "%f", "%i", "%c", "%k")]
+        launcher_names = {"kite-gc": "Kite GCS", "ardudeck": "ArduDeck", "inav-configurator": "INAV", "betaflight": "Betaflight", "qgroundcontrol": "QGroundControl"}
+        installed_by_id = {app["id"]: app for app in document["apps"]}
+        launcher_apps = [{"id": "qopenhd", "name": "QOpenHD", "exec": qexec, "icon": "/usr/share/openhd/brand/openhd-mark.png"}]
+        for app_id in ("ardudeck", "kite-gc", "inav-configurator", "betaflight"):
+            app = installed_by_id.get(app_id)
+            if app:
+                launcher_apps.append({"id": app_id, "name": launcher_names[app_id], "exec": ["/usr/local/sbin/openhd-desktop-app", app_id], "icon": app["icon"]})
+        qgc = installed_by_id.get("qgroundcontrol")
+        if qgc:
+            launcher_apps.append({"id": "qgroundcontrol", "name": launcher_names["qgroundcontrol"], "exec": ["/usr/local/sbin/openhd-desktop-app", "qgroundcontrol"], "icon": qgc["icon"]})
+        if [app["id"] for app in launcher_apps] != ["qopenhd", "ardudeck", "kite-gc", "inav-configurator", "betaflight"]:
+            raise RuntimeError("The five OpenHD launcher applications are not all installed")
         manifest = root / "usr/share/openhd/desktop-apps.json"
         manifest.parent.mkdir(parents=True, exist_ok=True)
         manifest.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")
+        (manifest.parent / "launcher-apps.json").write_text(json.dumps(launcher_apps, indent=2) + "\n")
         launcher_source = here / "overlay/usr/local/sbin/openhd-desktop-app"
         shutil.copyfile(launcher_source, root / "usr/local/sbin/openhd-desktop-app")
         (root / "usr/local/sbin/openhd-desktop-app").chmod(0o755)

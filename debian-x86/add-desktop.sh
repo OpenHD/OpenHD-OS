@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wayland desktop with coordinated shell, application launcher and flight apps.
+# OpenHD Hyprland desktop with the Quickshell Albatross interface.
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 work=$(realpath "${1:?Usage: add-desktop.sh WORKDIR}")
@@ -15,8 +15,8 @@ printf 'deb https://deb.debian.org/debian trixie-backports main\n' >"$work/root/
 chroot "$work/root" apt-get update
 chroot "$work/root" apt-get -t trixie-backports install -y --no-install-recommends \
     hyprland xdg-desktop-portal-hyprland \
-    greetd waybar mako-notifier wofi swaybg foot xwayland thunar \
-    network-manager-gnome dbus-x11 wvkbd arc-theme papirus-icon-theme \
+    greetd quickshell mako-notifier swaybg foot xwayland thunar \
+    dbus-x11 wvkbd network-manager-gnome arc-theme papirus-icon-theme \
     fonts-inter fonts-font-awesome libnotify-bin brightnessctl \
     pipewire pipewire-pulse wireplumber xdg-desktop-portal-gtk
 chroot "$work/root" apt-get purge -y xfce4-session xfce4-panel xfwm4 xfdesktop4 \

@@ -1,3 +1,2 @@
 #!/bin/sh
-exec wofi --show drun --allow-images --insensitive --prompt 'Find an application…' \
-    --width 60% --height 65% --style /usr/share/openhd/desktop-config/wofi/style.css
+exec qs ipc call launcher toggle

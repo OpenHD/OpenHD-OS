@@ -7,7 +7,7 @@ here=$(cd -- "$(dirname -- "$0")" && pwd)
 work=$(realpath "${1:?Usage: update-packages.sh WORKDIR DEB_DIRECTORY [--test]}")
 packages=$(realpath "${2:?Supply the new amd64 Debian package directory}")
 if [[ -x "$work/root/usr/bin/Hyprland" ]]; then
-    export IMAGE_BYTES=${IMAGE_BYTES:-2000000000}
+    export IMAGE_BYTES=${IMAGE_BYTES:-2147483648}
 fi
 [[ $EUID == 0 && -f "$work/root/etc/debian_version" ]] || exit 1
 shopt -s nullglob

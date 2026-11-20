@@ -66,11 +66,18 @@ def main():
         guest.read_until(rb"openhd login:")
         guest.ready()
         guest.desktop_ui()
+        launcher_apps = __import__("json").loads((work / "root/usr/share/openhd/launcher-apps.json").read_text())
+        expected_launchers = ["qopenhd", "ardudeck", "kite-gc", "inav-configurator", "betaflight", "qgroundcontrol"]
+        if [app["id"] for app in launcher_apps] != expected_launchers:
+            raise RuntimeError("The launcher catalog is missing an expected app or has an unexpected order")
+        if not all(app.get("icon") and app.get("exec") for app in launcher_apps):
+            raise RuntimeError("A launcher entry has no installed icon or executable")
+        guest.run("test $(pgrep -xc qs) = 1 && ! pgrep -x waybar && ! pgrep -x wofi")
         guest.run("mount -t tmpfs -o size=768M tmpfs /home/openhd; chown openhd:openhd /home/openhd")
         document = __import__("json").loads((work / "root/usr/share/openhd/desktop-apps.json").read_text())
         for app in document["apps"]:
             name = app["id"]
-            guest.run(f"for key in DISPLAY XAUTHORITY WAYLAND_DISPLAY XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS; do value=$(tr '\\0' '\\n' < /proc/$(pgrep -x waybar)/environ | sed -n \"s/^$key=//p\"); export \"$key=$value\"; done; python3 -c 'import pathlib,subprocess; log=open(\"/run/{name}.log\",\"w\"); p=subprocess.Popen([\"runuser\",\"-u\",\"openhd\",\"--\",\"/usr/local/sbin/openhd-desktop-app\",\"{name}\"],stdout=log,stderr=subprocess.STDOUT,start_new_session=True); pathlib.Path(\"/run/{name}.pid\").write_text(str(p.pid))'")
+            guest.run(f"for key in DISPLAY XAUTHORITY WAYLAND_DISPLAY XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS; do value=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | sed -n \"s/^$key=//p\"); export \"$key=$value\"; done; python3 -c 'import pathlib,subprocess; log=open(\"/run/{name}.log\",\"w\"); p=subprocess.Popen([\"runuser\",\"-u\",\"openhd\",\"--\",\"/usr/local/sbin/openhd-desktop-app\",\"{name}\"],stdout=log,stderr=subprocess.STDOUT,start_new_session=True); pathlib.Path(\"/run/{name}.pid\").write_text(str(p.pid))'")
             time.sleep(12)
             result = guest.run(f"cat /run/{name}.log; ps -u openhd -o pid,comm; kill -0 $(cat /run/{name}.pid)", expected=None)
             (guest.test / (name + ".log")).write_text(result)
