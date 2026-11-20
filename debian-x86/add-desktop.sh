@@ -12,7 +12,7 @@ rm -f "$work/root/etc/resolv.conf"
 cp --dereference /etc/resolv.conf "$work/root/etc/resolv.conf"
 chroot "$work/root" apt-get update
 chroot "$work/root" apt-get install -y --no-install-recommends \
-    xserver-xorg-core xserver-xorg-input-libinput xinit \
+    xserver-xorg-core xserver-xorg-input-libinput xinit xauth \
     xfce4-session xfce4-panel xfwm4 xfdesktop4 xfce4-settings thunar \
     network-manager-gnome dbus-x11 xterm
 chroot "$work/root" apt-get clean

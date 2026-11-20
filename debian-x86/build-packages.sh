@@ -58,7 +58,7 @@ chmod -x /etc/grub.d/10_linux /etc/grub.d/20_linux_xen /etc/grub.d/30_uefi-firmw
 if mountpoint -q /boot/efi; then update-grub; fi
 POSTINST
             chmod 755 "$stage/DEBIAN/postinst"
-            extra='qopenhd, openhd, openhd-sys-utils, openhd-installer, grub2-common, rsync, btrfs-progs, dosfstools, gdisk, parted';;
+            extra='qopenhd, openhd, openhd-sys-utils, openhd-installer, grub2-common, rsync, btrfs-progs, dosfstools, gdisk, parted, librsvg2-common';;
         openhd-installer)
             install -s /build/installer/openhd-installer "$stage/usr/local/bin/openhd-installer"
             extra='openhd, openhd-sys-utils';;

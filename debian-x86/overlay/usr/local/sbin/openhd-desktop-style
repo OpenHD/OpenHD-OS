@@ -1,0 +1,22 @@
+#!/bin/sh
+# Apply the initial wallpaper after XFCE discovers the monitor; preserve changes.
+set -eu
+stamp="$HOME/.config/openhd-desktop-initialized"
+[ ! -e "$stamp" ] || exit 0
+attempt=0
+while [ "$attempt" -lt 15 ]; do
+    properties=$(xfconf-query -c xfce4-desktop -l 2>/dev/null || true)
+    if printf '%s\n' "$properties" | grep -q '/last-image$'; then
+        printf '%s\n' "$properties" | while IFS= read -r property; do
+            case "$property" in
+                */last-image) xfconf-query -c xfce4-desktop -p "$property" -s /usr/share/backgrounds/openhd.svg ;;
+                */image-style) xfconf-query -c xfce4-desktop -p "$property" -s 5 ;;
+            esac
+        done
+        mkdir -p "$HOME/.config"
+        touch "$stamp"
+        exit 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+done
