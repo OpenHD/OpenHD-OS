@@ -13,8 +13,8 @@ cp --dereference /etc/resolv.conf "$work/root/etc/resolv.conf"
 chroot "$work/root" apt-get update
 printf 'deb https://deb.debian.org/debian trixie-backports main\n' >"$work/root/etc/apt/sources.list.d/openhd-backports.list"
 chroot "$work/root" apt-get update
-chroot "$work/root" apt-get install -y --no-install-recommends \
-    hyprland/trixie-backports xdg-desktop-portal-hyprland/trixie-backports \
+chroot "$work/root" apt-get -t trixie-backports install -y --no-install-recommends \
+    hyprland xdg-desktop-portal-hyprland \
     greetd waybar mako-notifier wofi swaybg foot xwayland thunar \
     network-manager-gnome dbus-x11 wvkbd arc-theme papirus-icon-theme \
     fonts-inter fonts-font-awesome libnotify-bin brightnessctl \
