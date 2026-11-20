@@ -58,7 +58,7 @@ jobs:
         run: |
           sudo bash debian-x86/make-root.sh /opt/openhd-os-work
           if [ "$PROFILE" = desktop-image ]; then
-            sudo bash debian-x86/add-desktop.sh /opt/openhd-os-work
+            sudo env GITHUB_TOKEN="$GITHUB_TOKEN" bash debian-x86/add-desktop.sh /opt/openhd-os-work
             sudo env IMAGE_BYTES=2147483648 bash debian-x86/assemble-and-test.sh /opt/openhd-os-work --test
           else
             sudo bash debian-x86/assemble-and-test.sh /opt/openhd-os-work --test
