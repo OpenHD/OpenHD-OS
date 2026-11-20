@@ -31,7 +31,10 @@ def main():
             elif name == "desktop":
                 lit = (8 <= x <= 56 and (12 <= y <= 15 or 43 <= y <= 46)) or (12 <= y <= 46 and (8 <= x <= 11 or 53 <= x <= 56)) or (30 <= x <= 34 and 46 <= y <= 54) or (22 <= x <= 42 and 53 <= y <= 56)
             elif name == "install":
-                lit = (29 <= x <= 35 and 8 <= y <= 37) or (25 <= y <= 44 and abs(x - 32) <= y - 24 and abs(x - 32) >= y - 31) or (10 <= x <= 54 and 52 <= y <= 56)
+                shaft = 30 <= x <= 34 and 10 <= y <= 35
+                head = 18 <= y <= 41 and abs(abs(x - 32) - (y - 18)) <= 2
+                tray = (13 <= x <= 51 and 50 <= y <= 54) or (13 <= x <= 17 and 44 <= y <= 52) or (47 <= x <= 51 and 44 <= y <= 52)
+                lit = shaft or head or tray
             else:
                 radius = math.hypot(x - 32, y - 32)
                 lit = 15 <= radius <= 23 and (x % 16 < 10 or y % 16 < 10)
