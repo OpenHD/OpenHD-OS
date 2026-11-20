@@ -14,6 +14,7 @@ tree = work / "iso"
 (tree / "boot/grub").mkdir(parents=True, exist_ok=True)
 shutil.copytree(source / "overlay/usr/share/grub", tree / "usr/share/grub", dirs_exist_ok=True)
 subprocess.run(["grub-mkfont", "-s", "20", "-o", str(tree / "usr/share/grub/themes/openhd/openhd.pf2"), "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"], check=True)
+subprocess.run(["grub-mkfont", "-s", "12", "-o", str(tree / "usr/share/grub/themes/openhd/console.pf2"), "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"], check=True)
 menu = subprocess.check_output(["sh", str(source / "overlay/usr/local/sbin/openhd-grub-menu"), "preview-root", "vmlinuz-preview"], text=True)
 (tree / "boot/grub/grub.cfg").write_text("""insmod serial
 serial --unit=0 --speed=115200
