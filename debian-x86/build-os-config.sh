@@ -6,6 +6,7 @@ output=$(realpath -m "${2:?Supply output .deb path}")
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 mkdir -p "$stage/DEBIAN"
+chmod 755 "$stage" "$stage/DEBIAN"
 cp -a "$overlay/." "$stage/"
 find "$stage/etc" "$stage/usr" -type f ! -name '*.png' ! -name '*.pf2' -exec sed -i 's/\r$//' {} +
 find "$stage/etc" "$stage/usr" -type f -exec chmod 644 {} +
