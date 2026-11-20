@@ -72,7 +72,7 @@ def main():
             debs.append("/tmp/openhd-desktop-apps/" + target.name)
         environment = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
         run("chroot", str(root), "apt-get", "update", env=environment)
-        run("chroot", str(root), "apt-get", "-o", "Dpkg::Options::=--force-confold", "install", "-y", "--no-install-recommends", "dbus", "python3-minimal", "libglib2.0-bin", *debs, env=environment)
+        run("chroot", str(root), "apt-get", "-o", "Dpkg::Options::=--force-confold", "install", "-y", "--no-install-recommends", "dbus", "python3-minimal", "libglib2.0-bin", "qt6-svg-plugins", *debs, env=environment)
         run("chroot", str(root), "usermod", "-a", "-G", "dialout,video,render,input,plugdev,audio", "openhd")
         for app in document["apps"]:
             if app["format"] == "appimage":
@@ -139,11 +139,23 @@ def main():
         qexec = [part for part in shlex.split(qopenhd["Desktop Entry"]["Exec"]) if part not in ("%U", "%u", "%F", "%f", "%i", "%c", "%k")]
         launcher_names = {"kite-gc": "Kite GCS", "ardudeck": "ArduDeck", "inav-configurator": "INAV", "betaflight": "Betaflight", "qgroundcontrol": "QGroundControl"}
         installed_by_id = {app["id"]: app for app in document["apps"]}
-        launcher_apps = [{"id": "qopenhd", "name": "QOpenHD", "exec": qexec, "icon": "/usr/share/openhd/brand/openhd-mark.png"}]
+        brand_icons = {
+            "qopenhd": "/usr/share/openhd/brand/apps/qopenhd-wordmark.png",
+            "ardudeck": "/usr/share/openhd/brand/apps/ardudeck.png",
+            "kite-gc": "/usr/share/openhd/brand/apps/kitegc.svg",
+            "inav-configurator": "/usr/share/openhd/brand/apps/inav.png",
+            "betaflight": "/usr/share/openhd/brand/apps/betaflight.svg",
+        }
+        for icon in brand_icons.values():
+            relative = icon.lstrip("/")
+            destination = root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(here / "overlay" / relative, destination)
+        launcher_apps = [{"id": "qopenhd", "name": "QOpenHD", "exec": qexec, "icon": brand_icons["qopenhd"]}]
         for app_id in ("ardudeck", "kite-gc", "inav-configurator", "betaflight"):
             app = installed_by_id.get(app_id)
             if app:
-                launcher_apps.append({"id": app_id, "name": launcher_names[app_id], "exec": ["/usr/local/sbin/openhd-desktop-app", app_id], "icon": app["icon"]})
+                launcher_apps.append({"id": app_id, "name": launcher_names[app_id], "exec": ["/usr/local/sbin/openhd-desktop-app", app_id], "icon": brand_icons[app_id]})
         qgc = installed_by_id.get("qgroundcontrol")
         if qgc:
             launcher_apps.append({"id": "qgroundcontrol", "name": launcher_names["qgroundcontrol"], "exec": ["/usr/local/sbin/openhd-desktop-app", "qgroundcontrol"], "icon": qgc["icon"]})

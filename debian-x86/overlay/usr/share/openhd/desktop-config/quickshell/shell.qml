@@ -24,6 +24,26 @@ ShellRoot {
     Timer { interval: 10000; running: true; repeat: true; onTriggered: { networkProbe.running = true; audioProbe.running = true; batteryProbe.running = true } }
     Component.onCompleted: { networkProbe.running = true; audioProbe.running = true; batteryProbe.running = true }
 
+    PanelWindow {
+        anchors { top: true; left: true; right: true; bottom: true }
+        color: "#020711"
+        exclusiveZone: 0
+        WlrLayershell.layer: WlrLayer.Background
+        Image {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: parent.height * 0.02
+            width: Math.min(parent.width * 0.65, parent.height * 0.50 * 1365 / 768)
+            height: width * 768 / 1365
+            source: "file:///usr/share/backgrounds/openhd-3.0.png"
+            sourceSize.width: 1365
+            sourceSize.height: 768
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            mipmap: true
+        }
+    }
+
     Process {
         id: networkProbe
         command: ["sh", "-c", "nmcli -t -f CONNECTIVITY general 2>/dev/null || true"]
@@ -116,7 +136,8 @@ ShellRoot {
                     Quickshell.execDetached(["/usr/local/sbin/openhd-desktop-app", filteredApps[selectedIndex].id])
                     shell.launcherOpen = false
                 }
-                anchors.centerIn: parent
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: Math.min(parent.height * 0.64 - height / 2, parent.height - height - 20)
                 width: Math.min(860, parent.width - 32)
                 height: 232
                 radius: 20
@@ -172,7 +193,7 @@ ShellRoot {
                                 required property int index
                                 Layout.fillWidth: true
                                 Layout.preferredWidth: 150
-                                Layout.minimumWidth: 96
+                                Layout.minimumWidth: 0
                                 height: 132
                                 radius: 15
                                 color: index === launcher.selectedIndex ? "#bd092237" : "#aa102238"
@@ -184,13 +205,19 @@ ShellRoot {
                                     anchors.fill: parent
                                     anchors.margins: 12
                                     spacing: 8
-                                    Image {
+                                    Item {
                                         Layout.fillWidth: true
                                         Layout.fillHeight: true
-                                        source: modelData.icon.startsWith("/") ? "file://" + modelData.icon : Quickshell.iconPath(modelData.icon, "applications-science")
-                                        sourceSize.width: 56
-                                        sourceSize.height: 56
-                                        fillMode: Image.PreserveAspectFit
+                                        Image {
+                                            anchors.centerIn: parent
+                                            width: Math.min(parent.width, modelData.id === "qopenhd" ? 112 : 56)
+                                            height: Math.min(parent.height, 56)
+                                            source: modelData.icon.startsWith("/") ? "file://" + modelData.icon : Quickshell.iconPath(modelData.icon, "applications-science")
+                                            sourceSize.width: modelData.id === "qopenhd" ? 560 : 192
+                                            fillMode: Image.PreserveAspectFit
+                                            smooth: true
+                                            mipmap: true
+                                        }
                                     }
                                     Text { Layout.fillWidth: true; text: modelData.name; color: "#f1f6fb"; font.family: "Inter"; font.pixelSize: 14; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight }
                                 }

@@ -116,7 +116,7 @@ class Guest:
         self.run("systemctl is-active qopenhd openhd openhd-sys-utils NetworkManager")
         self.run("test $(systemctl show qopenhd -p NRestarts --value) = 0")
 
-    def shutdown(self):
+    def shutdown(self, *, allow_forced_exit=False):
         self.serial.sendall(b"sync; systemctl poweroff\n")
         # Drain the serial console while waiting. Backpressure can otherwise
         # stall the guest's shutdown logging and look like a service hang.
@@ -128,6 +128,9 @@ class Guest:
                     self.transcript.write(chunk)
             except socket.timeout:
                 pass
+        if self.process.poll() is None and allow_forced_exit:
+            print("WARNING: desktop VM did not exit after poweroff; stopping QEMU", flush=True)
+            self.process.terminate()
         self.process.wait(timeout=5)
         self.serial.close()
         self.qmp_file.close()
@@ -305,7 +308,7 @@ def main():
             guest.run("timeout 90 sh -c 'until pgrep -x Hyprland; do sleep 1; done'", timeout=100)
             guest.desktop_ui()
             guest.run("systemctl is-active qopenhd openhd openhd-sys-utils")
-            guest.shutdown()
+            guest.shutdown(allow_forced_exit=True)
             print("PASS: unified image boots Hyprland desktop and minimal QOpenHD from the same installation", flush=True)
     except Exception:
         if guest.process and guest.process.poll() is None:

@@ -1,6 +1,5 @@
 -- OpenHD skin for Hyprland 0.55 (Debian 13 backports).
 hl.on("hyprland.start", function()
-    hl.exec_cmd("swaybg -i /usr/share/backgrounds/openhd-3.0.png -m fit")
     hl.exec_cmd("sh -c 'mkdir -p /home/openhd/.local/state/openhd; exec qs -p /usr/share/openhd/desktop-config/quickshell >>/home/openhd/.local/state/openhd/quickshell.log 2>&1'")
     hl.exec_cmd("mako -c /usr/share/openhd/desktop-config/mako/config")
 end)
@@ -23,7 +22,7 @@ hl.config({
     animations = { enabled = true },
     dwindle = { preserve_split = true },
     input = { kb_layout = "us", follow_mouse = 1, touchpad = { natural_scroll = true } },
-    misc = { force_default_wallpaper = -1, disable_hyprland_logo = true },
+    misc = { force_default_wallpaper = -1, disable_hyprland_logo = true, disable_splash_rendering = true },
 })
 hl.curve("openhdEase", { type = "bezier", points = {{0.16, 1}, {0.3, 1}} })
 hl.animation({ leaf = "global", enabled = true, speed = 5, bezier = "openhdEase" })

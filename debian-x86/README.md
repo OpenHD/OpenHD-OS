@@ -55,6 +55,8 @@ It uses the supplied Albatross 3.0 wallpaper unchanged, a slim OpenHD-OS status
 bar, and a centered five-app launcher for QOpenHD, ArduDeck, Kite GCS, INAV and
 Betaflight. Search filters the installed launch entries; arrow keys and Enter
 launch the selected app, Escape hides the launcher, and Ctrl+Space opens it again.
+Tiles use official upstream app artwork at consistent display sizes; their
+sources are listed in `BRAND-ASSETS.md`.
 Flight tools are resolved from their installed `.desktop` launchers and refreshed
 from upstream stable releases by the image builder. QGroundControl is also
 installed and remains available from the applications list/search.

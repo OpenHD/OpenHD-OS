@@ -15,7 +15,7 @@ printf 'deb https://deb.debian.org/debian trixie-backports main\n' >"$work/root/
 chroot "$work/root" apt-get update
 chroot "$work/root" apt-get -t trixie-backports install -y --no-install-recommends \
     hyprland xdg-desktop-portal-hyprland \
-    greetd quickshell mako-notifier swaybg foot xwayland thunar \
+    greetd quickshell mako-notifier foot xwayland thunar \
     dbus-x11 qt6-wayland wvkbd network-manager-gnome arc-theme papirus-icon-theme \
     fonts-inter fonts-font-awesome libnotify-bin brightnessctl \
     pipewire pipewire-pulse wireplumber xdg-desktop-portal-gtk
