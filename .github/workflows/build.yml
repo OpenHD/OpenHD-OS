@@ -70,6 +70,7 @@ jobs:
             /opt/openhd-os-work/output/*.img
             /opt/openhd-os-work/output/SHA256SUMS
             /opt/openhd-os-work/output/*report.txt
+            /opt/openhd-os-work/output/vm-test/*.png
             /opt/openhd-os-work/output/packages.tsv
             /opt/openhd-os-work/desktop-apps.lock.json
           retention-days: 7
