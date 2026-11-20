@@ -31,6 +31,21 @@ Canvas {
         [1.00, 0.12, 0.24]
     ]
 
+    // Distance from the center and the upper edge of the bird in source
+    // coordinates. The fade exposes the desktop glow above each wing.
+    readonly property var upperEdge: [
+        [0.000, 0.157],
+        [0.015, 0.187],
+        [0.038, 0.260],
+        [0.071, 0.305],
+        [0.115, 0.299],
+        [0.200, 0.272],
+        [0.300, 0.250],
+        [0.400, 0.222],
+        [0.485, 0.183],
+        [0.500, 0.183]
+    ]
+
     function smoothStep(t) {
         const v = Math.max(0, Math.min(1, t))
         return v * v * (3 - 2 * v)
@@ -64,6 +79,30 @@ Canvas {
         }
     }
 
+    function blendSky(ctx, x, y, w, h) {
+        let section = 0
+        for (let column = 0; column < w / 2; ++column) {
+            const left = Math.floor((w - 1) / 2) - column
+            const right = w - 1 - left
+            const distance = (right + 0.5) / w - 0.5
+            while (distance > upperEdge[section + 1][0])
+                ++section
+            const start = upperEdge[section]
+            const end = upperEdge[section + 1]
+            const edge = start[1] + (end[1] - start[1])
+                * (distance - start[0]) / (end[0] - start[0])
+            const mask = ctx.createLinearGradient(x, y + (edge - 0.105) * h, x, y + (edge - 0.014) * h)
+            for (let stop = 0; stop <= 4; ++stop) {
+                const fraction = stop / 4
+                mask.addColorStop(fraction, Qt.rgba(1, 1, 1, smoothStep(fraction)))
+            }
+            ctx.fillStyle = mask
+            ctx.fillRect(x + left, y, 1, h)
+            if (left !== right)
+                ctx.fillRect(x + right, y, 1, h)
+        }
+    }
+
     onPaint: {
         const ctx = getContext("2d")
         ctx.reset()
@@ -77,6 +116,7 @@ Canvas {
             ctx.drawImage(artwork, x, y, w, h)
 
             maskArtwork(ctx, x, y, w, h)
+            blendSky(ctx, x, y, w, h)
         }
 
         ctx.globalCompositeOperation = "destination-over"
