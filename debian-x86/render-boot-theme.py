@@ -26,7 +26,8 @@ def main():
         def icon(x, y):
             if name == "minimal":
                 radius = math.hypot(x - 32, y - 32)
-                lit = 23 < radius < 26 or (x < 31 and y < 31 and (12 < radius < 15 or 18 < radius < 21))
+                play = 24 <= x <= 43 and abs(y - 32) <= (x - 24) * 0.72
+                lit = 24 < radius < 28 or play
             elif name == "desktop":
                 lit = (8 <= x <= 56 and (12 <= y <= 15 or 43 <= y <= 46)) or (12 <= y <= 46 and (8 <= x <= 11 or 53 <= x <= 56)) or (30 <= x <= 34 and 46 <= y <= 54) or (22 <= x <= 42 and 53 <= y <= 56)
             elif name == "install":
@@ -34,7 +35,7 @@ def main():
             else:
                 radius = math.hypot(x - 32, y - 32)
                 lit = 15 <= radius <= 23 and (x % 16 < 10 or y % 16 < 10)
-            return (48, 197, 239, 255) if lit else (0, 0, 0, 0)
+            return (235, 246, 252, 255) if lit else (0, 0, 0, 0)
         png(base / "icons" / (name + ".png"), 64, 64, icon)
     # selected_*.png are hand-composed nine-slice panels with a cyan glow.
 
