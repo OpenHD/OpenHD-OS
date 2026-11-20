@@ -54,6 +54,7 @@ jobs:
         if: inputs.output != 'packages'
         env:
           PROFILE: ${{ inputs.output }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           sudo bash debian-x86/make-root.sh /opt/openhd-os-work
           if [ "$PROFILE" = desktop-image ]; then
