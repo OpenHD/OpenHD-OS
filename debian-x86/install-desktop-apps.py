@@ -149,7 +149,7 @@ def main():
             launcher_apps.append({"id": "qgroundcontrol", "name": launcher_names["qgroundcontrol"], "exec": ["/usr/local/sbin/openhd-desktop-app", "qgroundcontrol"], "icon": qgc["icon"]})
         required_launchers = ["qopenhd", "ardudeck", "kite-gc", "inav-configurator", "betaflight"]
         launcher_ids = [app["id"] for app in launcher_apps]
-        if launcher_ids != required_launchers:
+        if launcher_ids[:len(required_launchers)] != required_launchers or launcher_ids[len(required_launchers):] not in ([], ["qgroundcontrol"]):
             raise RuntimeError("OpenHD launcher catalog mismatch; expected " + repr(required_launchers) + ", generated " + repr(launcher_ids) + "; available app IDs: " + repr(sorted(installed_by_id)))
         manifest = root / "usr/share/openhd/desktop-apps.json"
         manifest.parent.mkdir(parents=True, exist_ok=True)
