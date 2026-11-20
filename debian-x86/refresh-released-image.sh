@@ -19,7 +19,7 @@ btrfs check --readonly "${loop}p4" >"$work/base/btrfs-check.txt" 2>&1 || {
     cat "$work/base/btrfs-check.txt"
     exit 1
 }
-mount -t btrfs -o ro,nologreplay "${loop}p4" "$source_mount" || {
+mount -t btrfs -o ro,rescue=nologreplay "${loop}p4" "$source_mount" || {
     dmesg | tail -n 80
     exit 1
 }
