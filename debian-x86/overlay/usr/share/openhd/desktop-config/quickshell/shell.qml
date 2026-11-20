@@ -62,7 +62,11 @@ ShellRoot {
                 anchors.rightMargin: 20
                 spacing: 10
                 Image { source: "file:///usr/share/openhd/brand/openhd-mark.png"; sourceSize.width: 28; sourceSize.height: 28; fillMode: Image.PreserveAspectFit }
-                Row { spacing: 0; Text { text: "OpenHD"; color: "#f4f8fc"; font.family: "Inter"; font.pixelSize: 18; font.weight: Font.DemiBold }; Text { text: "-OS"; color: "#00c8f2"; font.family: "Inter"; font.pixelSize: 18; font.weight: Font.DemiBold } }
+                Row {
+                    spacing: 0
+                    Text { text: "OpenHD"; color: "#f4f8fc"; font.family: "Inter"; font.pixelSize: 18; font.weight: Font.DemiBold }
+                    Text { text: "-OS"; color: "#00c8f2"; font.family: "Inter"; font.pixelSize: 18; font.weight: Font.DemiBold }
+                }
                 Item { Layout.fillWidth: true }
                 Text {
                     text: "\uf1eb"
