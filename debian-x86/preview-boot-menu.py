@@ -15,12 +15,24 @@ tree = work / "iso"
 shutil.copytree(source / "overlay/usr/share/grub", tree / "usr/share/grub", dirs_exist_ok=True)
 subprocess.run(["grub-mkfont", "-s", "20", "-o", str(tree / "usr/share/grub/themes/openhd/openhd.pf2"), "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"], check=True)
 menu = subprocess.check_output(["sh", str(source / "overlay/usr/local/sbin/openhd-grub-menu"), "preview-root", "vmlinuz-preview"], text=True)
-(tree / "boot/grub/grub.cfg").write_text("set timeout=-1\nset default=openhd-minimal\n" + menu)
+(tree / "boot/grub/grub.cfg").write_text("""insmod serial
+serial --unit=0 --speed=115200
+terminal_output console serial
+echo PREVIEW_ROOT=$root PREFIX=$prefix
+ls /usr/share/grub/themes/openhd/
+if loadfont /usr/share/grub/themes/openhd/openhd.pf2; then
+    echo PREVIEW_FONT_OK
+else
+    echo PREVIEW_FONT_FAILED
+fi
+set timeout=-1
+set default=openhd-minimal
+""" + menu + "\nterminal_output --append serial\necho PREVIEW_THEME=$theme\n")
 subprocess.run(["grub-mkrescue", "-o", str(work / "preview.iso"), str(tree)], check=True)
 qmp_path = work / "qmp.sock"
 qmp_path.unlink(missing_ok=True)
 log = (work / "qemu.log").open("w")
-process = subprocess.Popen(["qemu-system-x86_64", "-m", "512", "-display", "none", "-device", "VGA", "-boot", "d", "-cdrom", str(work / "preview.iso"), "-qmp", "unix:" + str(qmp_path) + ",server=on,wait=off"], stdout=log, stderr=log)
+process = subprocess.Popen(["qemu-system-x86_64", "-m", "512", "-display", "none", "-vga", "std", "-serial", "file:" + str(work / "serial.log"), "-boot", "d", "-cdrom", str(work / "preview.iso"), "-qmp", "unix:" + str(qmp_path) + ",server=on,wait=off"], stdout=log, stderr=log)
 try:
     connection = socket.socket(socket.AF_UNIX)
     for attempt in range(100):
@@ -46,6 +58,7 @@ try:
     command("screendump", {"filename": str(work / "openhd-boot-menu.png"), "format": "png"})
     command("quit")
     process.wait(timeout=10)
+    print((work / "serial.log").read_text(errors="replace"))
 finally:
     if process.poll() is None:
         process.terminate()
