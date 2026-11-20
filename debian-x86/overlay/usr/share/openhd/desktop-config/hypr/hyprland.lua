@@ -1,4 +1,10 @@
 -- OpenHD skin for Hyprland 0.55 (Debian 13 backports).
+hl.on("hyprland.start", function()
+    hl.exec_cmd("swaybg -i /usr/share/backgrounds/openhd-3.0.png -m fit")
+    hl.exec_cmd("sh -c 'mkdir -p /home/openhd/.local/state/openhd; exec qs -p /usr/share/openhd/desktop-config/quickshell >>/home/openhd/.local/state/openhd/quickshell.log 2>&1'")
+    hl.exec_cmd("mako -c /usr/share/openhd/desktop-config/mako/config")
+end)
+
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = "auto" })
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
@@ -21,12 +27,6 @@ hl.config({
 })
 hl.curve("openhdEase", { type = "bezier", points = {{0.16, 1}, {0.3, 1}} })
 hl.animation({ leaf = "global", enabled = true, speed = 5, bezier = "openhdEase" })
-hl.on("hyprland.start", function()
-    hl.exec_cmd("dbus-update-activation-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE")
-    hl.exec_cmd("swaybg -i /usr/share/backgrounds/openhd-3.0.png -m fit")
-    hl.exec_cmd("qs -p /usr/share/openhd/desktop-config/quickshell")
-    hl.exec_cmd("mako -c /usr/share/openhd/desktop-config/mako/config")
-end)
 hl.bind("CTRL + space", hl.dsp.exec_cmd("qs ipc call launcher toggle"))
 hl.bind("SUPER + Return", hl.dsp.exec_cmd("foot --config /usr/share/openhd/desktop-config/foot/foot.ini"))
 hl.bind("SUPER + E", hl.dsp.exec_cmd("thunar"))

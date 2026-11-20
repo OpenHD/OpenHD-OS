@@ -310,7 +310,7 @@ def main():
     except Exception:
         if guest.process and guest.process.poll() is None:
             try:
-                diagnostic = guest.run("journalctl -b -u qopenhd -u openhd-installer -u openhd-grow-root --no-pager; journalctl -b --no-pager | grep -Ei 'quickshell|\\bqs\\b|hyprland|greetd' | tail -n 160; pgrep -af 'qs|Hyprland|greetd' || true; ls -la /run/user/1000 /dev/dri 2>&1; systemctl --failed --no-pager", expected=None, timeout=30)
+                diagnostic = guest.run("journalctl -b -u qopenhd -u openhd-installer -u openhd-grow-root --no-pager; journalctl -b --no-pager | grep -Ei 'quickshell|\\bqs\\b|hyprland|greetd' | tail -n 160; cat /home/openhd/.local/state/openhd/quickshell.log 2>&1 || true; pgrep -af 'qs|Hyprland|greetd' || true; ls -la /run/user/1000 /dev/dri 2>&1; systemctl --failed --no-pager", expected=None, timeout=30)
                 (guest.test / "failure-diagnostics.txt").write_text(diagnostic)
                 print("Desktop failure diagnostics:\n" + diagnostic, flush=True)
                 guest.screenshot("failure")
