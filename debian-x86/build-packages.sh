@@ -39,6 +39,7 @@ fi
 for component in ${PACKAGE_COMPONENTS:-qopenhd openhd openhd-sys-utils openhd-installer openhd-os}; do
     stage=/packages/$component
     mkdir -p "$stage/DEBIAN" "$stage/usr/local/bin"
+    chmod 0755 "$stage/DEBIAN"
     case "$component" in
         openhd-os)
             bash /src/build-os-config.sh /src/openhd-os-overlay /packages/openhd-os.deb
