@@ -33,6 +33,6 @@ if [[ ${2:-} == --desktop-test ]]; then
     python3 "$here/smoke-test.py" --builder "$builder" --root "$work/root" --output "$work/output" --desktop-only
 fi
 if [[ ${2:-} == --test || ${2:-} == --test-only ]]; then
-    chroot "$builder" apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
+    chroot "$builder" apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf ovmf-ia32
     python3 "$here/smoke-test.py" --builder "$builder" --root "$work/root" --output "$work/output"
 fi
