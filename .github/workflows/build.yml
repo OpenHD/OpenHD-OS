@@ -39,7 +39,9 @@ jobs:
           path: sources/OpenHD-SysUtils
           submodules: recursive
       - name: Initialize OpenHD ground receiver dependency
-        run: git -C sources/OpenHD submodule update --init --recursive OpenHD/ohd_interface/lib/devourer
+        run: |
+          git -C sources/OpenHD submodule update --init --recursive --checkout OpenHD/ohd_interface/lib/devourer
+          test -f sources/OpenHD/OpenHD/ohd_interface/lib/devourer/CMakeLists.txt
       - name: Prepare Debian component sources
         run: |
           sudo apt-get update
