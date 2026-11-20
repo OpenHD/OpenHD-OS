@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Generate the distribution's small GRUB artwork using only the Python stdlib."""
+"""Render crisp, antialiased OpenHD GRUB icons from simple vector geometry."""
 import math
 import pathlib
-import struct
-import zlib
 
 
 def png(path, width, height, pixel):
+    import struct
+    import zlib
+
     def chunk(kind, content):
         return struct.pack(">I", len(content)) + kind + content + struct.pack(">I", zlib.crc32(kind + content))
+
     data = bytearray()
     for y in range(height):
         data.append(0)
@@ -18,29 +20,64 @@ def png(path, width, height, pixel):
     path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(data, 9)) + chunk(b"IEND", b""))
 
 
+def segment_distance(x, y, a, b):
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    length = dx * dx + dy * dy
+    t = max(0.0, min(1.0, ((x - a[0]) * dx + (y - a[1]) * dy) / length)) if length else 0.0
+    return math.hypot(x - a[0] - t * dx, y - a[1] - t * dy)
+
+
+def polygon_contains(x, y, points):
+    inside = False
+    j = len(points) - 1
+    for i, (xi, yi) in enumerate(points):
+        xj, yj = points[j]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi:
+            inside = not inside
+        j = i
+    return inside
+
+
 def main():
-    base = pathlib.Path(__file__).parent / "overlay/usr/share/grub/themes/openhd"
-    # background.png is the hand-composed OpenHD 3.0 boot artwork. Keep this
-    # utility focused on the tiny monochrome menu icons and selection slices.
+    base = pathlib.Path(__file__).parent / "overlay/usr/share/grub/themes/openhd/icons"
+    scale = 4
+    white = (239, 247, 252, 255)
+    play = [(25, 22), (43, 32), (25, 42)]
+    monitor = [(12, 13), (52, 13), (52, 43), (12, 43)]
+    arrowhead = [(20, 29), (32, 41), (44, 29)]
+    tray = [(13, 45), (13, 53), (51, 53), (51, 45)]
+    gear = []
+    for tooth in range(12):
+        center = math.tau * tooth / 12
+        for offset, radius in ((-15, 18), (-10, 23), (10, 23), (15, 18)):
+            angle = center + math.radians(offset)
+            gear.append((32 + math.cos(angle) * radius, 32 + math.sin(angle) * radius))
+
+    def inside_line(x, y, points, thickness, closed=True):
+        edges = len(points) if closed else len(points) - 1
+        return any(segment_distance(x, y, points[i], points[(i + 1) % len(points)]) <= thickness / 2 for i in range(edges))
+
+    def shape(name, x, y):
+        radius = math.hypot(x - 32, y - 32)
+        if name == "minimal":
+            return abs(radius - 23) <= 1.8 or polygon_contains(x, y, play)
+        if name == "desktop":
+            return inside_line(x, y, monitor, 3.4) or segment_distance(x, y, (30, 43), (30, 49)) <= 1.7 or segment_distance(x, y, (34, 43), (34, 49)) <= 1.7 or segment_distance(x, y, (22, 51), (42, 51)) <= 1.7
+        if name == "install":
+            shaft = segment_distance(x, y, (32, 11), (32, 37)) <= 1.8
+            return shaft or inside_line(x, y, arrowhead, 3.5, closed=False) or inside_line(x, y, tray, 3.2, closed=False)
+        return inside_line(x, y, gear, 3.4) or abs(radius - 9) <= 2.2
+
     for name in ("minimal", "desktop", "install", "advanced"):
-        def icon(x, y):
-            if name == "minimal":
-                radius = math.hypot(x - 32, y - 32)
-                play = 24 <= x <= 43 and abs(y - 32) <= (x - 24) * 0.72
-                lit = 24 < radius < 28 or play
-            elif name == "desktop":
-                lit = (8 <= x <= 56 and (12 <= y <= 15 or 43 <= y <= 46)) or (12 <= y <= 46 and (8 <= x <= 11 or 53 <= x <= 56)) or (30 <= x <= 34 and 46 <= y <= 54) or (22 <= x <= 42 and 53 <= y <= 56)
-            elif name == "install":
-                shaft = 30 <= x <= 34 and 10 <= y <= 35
-                head = 18 <= y <= 41 and abs(abs(x - 32) - (y - 18)) <= 2
-                tray = (13 <= x <= 51 and 50 <= y <= 54) or (13 <= x <= 17 and 44 <= y <= 52) or (47 <= x <= 51 and 44 <= y <= 52)
-                lit = shaft or head or tray
-            else:
-                radius = math.hypot(x - 32, y - 32)
-                lit = 15 <= radius <= 23 and (x % 16 < 10 or y % 16 < 10)
-            return (235, 246, 252, 255) if lit else (0, 0, 0, 0)
-        png(base / "icons" / (name + ".png"), 64, 64, icon)
-    # selected_*.png are hand-composed nine-slice panels with a cyan glow.
+        def pixel(ix, iy, icon=name):
+            coverage = 0
+            for sy in range(scale):
+                for sx in range(scale):
+                    if shape(icon, (ix + (sx + .5) / scale) * 64 / 64, (iy + (sy + .5) / scale) * 64 / 64):
+                        coverage += 1
+            alpha = round(255 * coverage / (scale * scale))
+            return (*white[:3], alpha if coverage else 0)
+        png(base / f"{name}.png", 64, 64, pixel)
 
 
 if __name__ == "__main__":
