@@ -19,7 +19,14 @@ if [[ ${SKIP_QOPENHD_BUILD:-0} != 1 ]]; then
     qmake /src/QOpenHD/QOpenHD.pro CONFIG+=release CONFIG-=debug
     make -j"$jobs"
 fi
-cmake -S /src/OpenHD -B /build/openhd -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel \
+openhd_source=/src/OpenHD
+# The OpenHD 3.0 source branch is the distribution superproject; its CMake
+# application lives one directory below the checkout root. Older source exports
+# already place the CMake project at /src/OpenHD.
+if [[ ! -f "$openhd_source/CMakeLists.txt" && -f "$openhd_source/OpenHD/CMakeLists.txt" ]]; then
+    openhd_source="$openhd_source/OpenHD"
+fi
+cmake -S "$openhd_source" -B /build/openhd -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel \
     -DENABLE_AIR=OFF -DENABLE_USB_CAMERAS=OFF -DENABLE_GSTREAMER=OFF \
     -DWB_ENABLE_SIMD_OPTIMIZATIONS=OFF -DCMAKE_INSTALL_PREFIX=/usr/local
 cmake --build /build/openhd --target openhd -j "$jobs"
@@ -45,7 +52,7 @@ for component in ${PACKAGE_COMPONENTS:-qopenhd openhd openhd-sys-utils openhd-in
         openhd)
             install -s /build/openhd/openhd "$stage/usr/local/bin/openhd"
             mkdir -p "$stage/usr/local/share/openhd/settings"
-            cp /src/OpenHD/settings/generated/*.json "$stage/usr/local/share/openhd/settings/"
+            cp "$openhd_source"/settings/generated/*.json "$stage/usr/local/share/openhd/settings/"
             extra='network-manager, iw, iproute2, iptables';;
         openhd-sys-utils)
             DESTDIR="$stage" cmake --install /build/sysutils --strip
