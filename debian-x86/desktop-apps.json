@@ -1,0 +1,7 @@
+[
+  {"id":"kite-gc","name":"Kite GC","repo":"b14ckyy/Kite-GC","asset":"^KiteGC_Linux_x64_.*_installer\\.deb$","format":"deb"},
+  {"id":"ardudeck","name":"ArduDeck","repo":"rubenCodeforges/ardudeck","asset":"^ArduDeck-.*-linux-amd64\\.deb$","format":"deb"},
+  {"id":"qgroundcontrol","name":"QGroundControl","repo":"mavlink/qgroundcontrol","asset":"^QGroundControl-x86_64\\.AppImage$","format":"appimage"},
+  {"id":"inav-configurator","name":"INAV Configurator","repo":"iNavFlight/inav-configurator","asset":"^INAV-Configurator_linux_x64_.*\\.deb$","format":"deb"},
+  {"id":"betaflight","name":"Betaflight Configurator","repo":"betaflight/betaflight-configurator","asset":"^Betaflight-.*-amd64\\.deb$","format":"deb"}
+]

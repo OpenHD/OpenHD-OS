@@ -1,0 +1,60 @@
+name: Refresh released image with Hyprland and current flight apps
+on:
+  workflow_dispatch:
+    inputs:
+      base_tag:
+        default: v0.1.0-preview
+      release_tag:
+        description: Optional draft prerelease tag
+        default: ''
+permissions:
+  contents: write
+concurrency:
+  group: modern-desktop-image
+  cancel-in-progress: false
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install host image tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mmdebstrap rsync btrfs-progs gdisk grub-common fonts-dejavu-core curl gnupg
+          df -h /opt
+      - name: Refresh the released root and verify the 2 GB image
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          BASE_TAG: ${{ inputs.base_tag }}
+        run: sudo --preserve-env=GH_TOKEN,GITHUB_TOKEN env IMAGE_BYTES=2000000000 bash debian-x86/refresh-released-image.sh /opt/openhd-os-work "$BASE_TAG" 2>&1 | tee /tmp/openhd-image-build.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: modern-desktop-validation
+          path: |
+            /tmp/openhd-image-build.log
+            /opt/openhd-os-work/output/vm-test/*.png
+            /opt/openhd-os-work/output/vm-test/*.log
+            /opt/openhd-os-work/output/*report.txt
+            /opt/openhd-os-work/desktop-apps.lock.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openhd-os-hyprland-flight-apps-2gb
+          compression-level: 0
+          path: |
+            /opt/openhd-os-work/output/openhd-debian-x86-minimal.img
+            /opt/openhd-os-work/output/SHA256SUMS
+            /opt/openhd-os-work/output/packages.tsv
+            /opt/openhd-os-work/desktop-apps.lock.json
+      - name: Stage requested preview release
+        if: inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cp /opt/openhd-os-work/output/openhd-debian-x86-minimal.img /tmp/openhd-os-x86.img
+          sha256sum /tmp/openhd-os-x86.img | sed 's@/tmp/@@' > /tmp/SHA256SUMS
+          gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --draft --prerelease --title 'OpenHD-OS Hyprland preview with current flight apps' --notes '2 GB Debian image with Hyprland, OpenHD 3.0 wallpaper, a graphical boot menu, and Kite GC, ArduDeck, QGroundControl, INAV and Betaflight preinstalled. VM validation and upstream app versions are included as artifacts.' /tmp/openhd-os-x86.img /tmp/SHA256SUMS /opt/openhd-os-work/desktop-apps.lock.json

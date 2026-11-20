@@ -20,10 +20,8 @@ def png(path, width, height, pixel):
 
 def main():
     base = pathlib.Path(__file__).parent / "overlay/usr/share/grub/themes/openhd"
-    def backdrop(x, y):
-        glow = max(0, 1 - math.hypot((x - 1100) / 1000, (y - 150) / 700))
-        return (12 + int(glow * 3), 20 + int(glow * 22), 29 + int(glow * 32), 255)
-    png(base / "background.png", 1280, 800, backdrop)
+    # background.png is the hand-composed OpenHD 3.0 boot artwork. Keep this
+    # utility focused on the tiny monochrome menu icons and selection slices.
     for name in ("minimal", "desktop", "install", "advanced"):
         def icon(x, y):
             if name == "minimal":
@@ -38,8 +36,7 @@ def main():
                 lit = 15 <= radius <= 23 and (x % 16 < 10 or y % 16 < 10)
             return (48, 197, 239, 255) if lit else (0, 0, 0, 0)
         png(base / "icons" / (name + ".png"), 64, 64, icon)
-    for name in ("c", "n", "s", "e", "w", "nw", "ne", "sw", "se"):
-        png(base / ("selected_" + name + ".png"), 4, 4, lambda x, y: (28, 64, 83, 255))
+    # selected_*.png are hand-composed nine-slice panels with a cyan glow.
 
 
 if __name__ == "__main__":

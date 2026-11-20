@@ -41,7 +41,10 @@ fi
 while IFS= read -r -d '' source; do
     relative=${source#"$here/overlay/"}
     chmod 644 "$root/$relative"
-    sed -i 's/\r$//' "$root/$relative"
+    case "$relative" in
+        *.png|*.pf2) ;;
+        *) sed -i 's/\r$//' "$root/$relative" ;;
+    esac
 done < <(find "$here/overlay" -type f -print0)
 while IFS= read -r -d '' source; do
     relative=${source#"$here/overlay"}

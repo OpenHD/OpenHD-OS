@@ -7,7 +7,7 @@ insmod all_video
 insmod gfxterm
 insmod gfxmenu
 insmod png
-set gfxmode=1280x800,1024x768,800x600,auto
+set gfxmode=1280x720,1280x800,1024x768,800x600,auto
 if loadfont /usr/share/grub/themes/openhd/console.pf2; then
     loadfont /usr/share/grub/themes/openhd/openhd.pf2
     set gfxterm_font="DejaVu Sans Mono Regular 12"
@@ -33,7 +33,7 @@ entry 'Start QOpenHD in minimal mode' openhd-minimal 'openhd.mode=minimal' minim
 entry 'Start OpenHD-OS' openhd-desktop 'openhd.mode=desktop' desktop
 entry 'Install OpenHD minimal' openhd-install-minimal 'openhd.install openhd.profile=minimal' install
 entry 'Install OpenHD-OS' openhd-install-desktop 'openhd.install openhd.profile=desktop' install
-echo "submenu 'Advanced' --id openhd-advanced --class advanced {"
+echo "submenu 'Advanced options' --id openhd-advanced --class advanced {"
 entry 'QOpenHD with compatible video' openhd-compatible 'openhd.mode=minimal openhd.video=gl' minimal
 entry 'Maintenance console' openhd-console 'openhd.console' advanced
 echo '}'

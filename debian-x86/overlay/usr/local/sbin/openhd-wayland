@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+unset QT_QPA_EGLFS_INTEGRATION QT_QPA_EGLFS_KMS_ATOMIC QT_QPA_EGLFS_KMS_CONFIG
+unset QOPENHD_X86_KMS QOPENHD_BOOT_ANIMATION
+export XDG_CURRENT_DESKTOP=Hyprland
+export XDG_SESSION_DESKTOP=OpenHD
+export XDG_SESSION_TYPE=wayland
+export GTK_THEME=Arc-Dark
+export QT_QUICK_CONTROLS_STYLE=Material
+export QT_QUICK_CONTROLS_MATERIAL_THEME=Dark
+export QT_QUICK_CONTROLS_MATERIAL_ACCENT='#73d7ee'
+export XCURSOR_THEME=Adwaita
+export XCURSOR_SIZE=24
+exec dbus-run-session -- Hyprland --config /etc/xdg/hypr/hyprland.lua

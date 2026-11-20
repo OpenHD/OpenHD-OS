@@ -33,9 +33,10 @@ fi
 find "$work/builder/src" -type f \( -name '*.sh' -o -name '*.py' \) \
     -exec sed -i 's/\r$//' {} +
 install -m755 "$here/build-packages.sh" "$work/builder/build-packages.sh"
+install -m755 "$here/build-os-config.sh" "$work/builder/src/build-os-config.sh"
 mkdir -p "$work/builder/src/openhd-installer"
 cp "$here/installer/"* "$work/builder/src/openhd-installer/"
 mkdir -p "$work/builder/src/openhd-os-overlay"
 cp -a "$here/overlay/." "$work/builder/src/openhd-os-overlay/"
-find "$work/builder/src/openhd-os-overlay" -type f -exec sed -i 's/\r$//' {} +
+find "$work/builder/src/openhd-os-overlay" -type f ! -name '*.png' ! -name '*.pf2' -exec sed -i 's/\r$//' {} +
 chroot "$work/builder" /bin/bash /build-packages.sh

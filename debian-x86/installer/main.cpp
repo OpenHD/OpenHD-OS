@@ -295,7 +295,7 @@ public:
                 const auto arguments = commandLine.readAll().trimmed().split(' ');
                 const bool desktopStart = arguments.contains("openhd.mode=desktop");
                 if (arguments.contains("openhd.profile=desktop")) profile = "desktop";
-                if ((desktopStart || profile == "desktop") && !QFile::exists("/usr/bin/startxfce4")) {
+                if ((desktopStart || profile == "desktop") && !QFile::exists("/usr/bin/Hyprland")) {
                     pages->setCurrentIndex(6);
                 } else if (desktopStart) {
                     QTimer::singleShot(0, [] { QApplication::quit(); });

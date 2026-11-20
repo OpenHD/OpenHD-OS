@@ -10,7 +10,7 @@ jobs:
       - name: Check shell and Python sources
         run: |
           sudo apt-get update
-          sudo apt-get install -y shellcheck
+          sudo apt-get install -y shellcheck lua5.4
           bash debian-x86/check.sh
       - name: Compile graphical installer
         run: |

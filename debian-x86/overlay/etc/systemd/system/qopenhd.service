@@ -1,6 +1,6 @@
 [Unit]
 Description=QOpenHD
-After=systemd-udev-settle.service plymouth-start.service openhd-sys-utils.service openhd-installer.service
+After=systemd-udev-settle.service plymouth-start.service openhd-sys-utils.service openhd-installer.service systemd-user-sessions.service
 RequiresMountsFor=/Config
 Wants=systemd-udev-settle.service
 Conflicts=getty@tty1.service autovt@tty1.service

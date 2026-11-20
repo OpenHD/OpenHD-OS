@@ -137,7 +137,7 @@ class Guest:
         self.qmp_command("screendump", {"filename": "/output/vm-test/" + name + ".png", "format": "png"})
 
     def desktop_ui(self):
-        self.run("timeout 90 sh -c 'until pgrep -x xfce4-panel && pgrep -x xfdesktop; do sleep 1; done'", timeout=100)
+        self.run("timeout 90 sh -c 'until pgrep -x Hyprland && pgrep -x waybar; do sleep 1; done'", timeout=100)
         time.sleep(15)
         self.run("journalctl -b -u qopenhd --no-pager -n 80")
         self.screenshot("openhd-os-desktop")
@@ -185,7 +185,7 @@ class Guest:
         self.click(640, 685)
         self.installer_page(3)
         self.screenshot("installer-progress")
-        self.run("timeout 240 sh -c 'until journalctl -b -u openhd-installer --no-pager | grep -q \"OpenHD installer page: 4\"; do sleep 1; done'", timeout=250)
+        self.run("timeout 600 sh -c 'until journalctl -b -u openhd-installer --no-pager | grep -q \"OpenHD installer page: 4\"; do sleep 1; done'", timeout=610)
         time.sleep(1)
         self.screenshot("installer-complete")
         self.run("test $(blkid -s TYPE -o value /dev/vdb4) = btrfs && test $(blkid -s TYPE -o value /dev/vdb1) = vfat")
@@ -243,15 +243,19 @@ def main():
         guest.run("echo persistent-native-root > /etc/openhd/persistence-test; hello")
         guest.screenshot("usb-qopenhd")
         guest.run("sed -i 's/set default=openhd-minimal/set default=openhd-install-minimal/' /boot/grub/grub.cfg")
+        guest.run("sed -i 's/set timeout=1$/set timeout=45/' /boot/grub/grub.cfg")
         guest.shutdown()
         print("PASS: native writable root, APT install and QOpenHD services", flush=True)
         guest.start("bios")
+        time.sleep(12)
+        guest.screenshot("graphical-boot-menu")
         guest.ready()
         guest.run("openhd-install --target /dev/vda --dry-run", expected=1)
         guest.run("openhd-install --target /dev/vdb --dry-run")
         guest.gui_install()
         guest.flight_ui()
         guest.run("sed -i 's/set default=openhd-install-minimal/set default=openhd-minimal/' /boot/grub/grub.cfg")
+        guest.run("sed -i 's/set timeout=45$/set timeout=1/' /boot/grub/grub.cfg")
         guest.run("grep -q persistent-native-root /etc/openhd/persistence-test && hello")
         guest.run("test ! -e /Config/openhd/settings.json && grep -Eq '\"debug\"[[:space:]]*:[[:space:]]*true' /usr/local/share/OpenHD/SysUtils/config.json && grep -q imagewriter-config-persistent /Config/imagewriter-test.txt")
         guest.run("grep -q imagewriter_import_test=true /root/.config/OpenHD/QOpenHD.conf && test -s /etc/openhd/qopenhd-import.sha256")
@@ -289,7 +293,7 @@ def main():
         guest.click(640, 750)  # Back to welcome, with no terminal interaction.
         guest.click(640, 654)  # Start QOpenHD.
         guest.flight_ui()
-        desktop = "DESKTOP_AVAILABLE" in guest.run("test ! -x /usr/bin/startxfce4 || echo DESKTOP_AVAILABLE")
+        desktop = "DESKTOP_AVAILABLE" in guest.run("test ! -x /usr/bin/Hyprland || echo DESKTOP_AVAILABLE")
         if desktop:
             guest.run("sed -i 's/set default=\"openhd-install-minimal\"/set default=\"openhd-desktop\"/' /boot/grub/grub.cfg")
         guest.shutdown()
@@ -298,11 +302,11 @@ def main():
             guest.start("uefi", installed=True)
             guest.ready()
             guest.run("grep -qw openhd.mode=desktop /proc/cmdline")
-            guest.run("timeout 60 sh -c 'until pgrep -x xfce4-session; do sleep 1; done'", timeout=70)
+            guest.run("timeout 90 sh -c 'until pgrep -x Hyprland; do sleep 1; done'", timeout=100)
             guest.desktop_ui()
             guest.run("systemctl is-active qopenhd openhd openhd-sys-utils")
             guest.shutdown()
-            print("PASS: unified image boots XFCE desktop and minimal QOpenHD from the same installation", flush=True)
+            print("PASS: unified image boots Hyprland desktop and minimal QOpenHD from the same installation", flush=True)
     except Exception:
         if guest.process and guest.process.poll() is None:
             try:

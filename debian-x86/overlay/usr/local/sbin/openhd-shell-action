@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+case "${1:-}" in
+    keyboard)
+        if pgrep -x wvkbd-mobintl >/dev/null; then pkill -x wvkbd-mobintl; else wvkbd-mobintl & fi
+        ;;
+    power)
+        choice=$(printf 'Restart\nShut down\nCancel\n' | wofi --dmenu --prompt 'Power' --width 350 --height 260 --style /etc/xdg/wofi/style.css) || exit 0
+        case "$choice" in
+            Restart) systemctl reboot ;;
+            'Shut down') systemctl poweroff ;;
+        esac
+        ;;
+esac

@@ -6,8 +6,8 @@ export DEBIAN_FRONTEND=noninteractive
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 work=$(realpath "${1:?Usage: update-packages.sh WORKDIR DEB_DIRECTORY [--test]}")
 packages=$(realpath "${2:?Supply the new amd64 Debian package directory}")
-if [[ -x "$work/root/usr/bin/startxfce4" ]]; then
-    export IMAGE_BYTES=${IMAGE_BYTES:-1499987968}
+if [[ -x "$work/root/usr/bin/Hyprland" ]]; then
+    export IMAGE_BYTES=${IMAGE_BYTES:-2000000000}
 fi
 [[ $EUID == 0 && -f "$work/root/etc/debian_version" ]] || exit 1
 shopt -s nullglob
@@ -43,4 +43,7 @@ done
 cleanup
 trap - EXIT
 ln -sfn /run/NetworkManager/resolv.conf "$work/root/etc/resolv.conf"
+if [[ -f "$work/root/usr/share/openhd/desktop-apps.json" && ${REFRESH_DESKTOP_APPS:-1} == 1 ]]; then
+    python3 "$here/install-desktop-apps.py" "$work"
+fi
 bash "$here/assemble-and-test.sh" "$work" "${3:-}"

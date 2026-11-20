@@ -19,7 +19,7 @@ while (($#)); do
     shift
 done
 [[ "$profile" == minimal || "$profile" == desktop ]] || { echo 'Unknown installation profile.' >&2; exit 1; }
-[[ "$profile" != desktop || -x /usr/bin/startxfce4 ]] || { echo 'Use the OpenHD-OS desktop image for desktop installation.' >&2; exit 1; }
+[[ "$profile" != desktop || -x /usr/bin/Hyprland ]] || { echo 'Use the OpenHD-OS desktop image for desktop installation.' >&2; exit 1; }
 [[ -n "$target" ]] || { usage; exit 1; }
 target=$(readlink -f -- "$target")
 [[ -b "$target" && $(lsblk -dn -o TYPE "$target") == disk ]] || {
@@ -106,8 +106,8 @@ rm -f "$mountpoint/var/lib/dbus/machine-id"
 for path in dev proc sys; do mount --rbind "/$path" "$mountpoint/$path"; mount --make-rslave "$mountpoint/$path"; done
 echo 'OPENHD_PROGRESS 80 Installing BIOS and EFI bootloaders'
 chroot "$mountpoint" grub-install --target=x86_64-efi --uefi-secure-boot --efi-directory=/boot/efi --removable --no-nvram
-chroot "$mountpoint" grub-install --target=i386-efi --no-uefi-secure-boot --efi-directory=/boot/efi --removable --no-nvram
-chroot "$mountpoint" grub-install --target=i386-pc "$target"
+chroot "$mountpoint" grub-install --target=i386-efi --modules='all_video gfxterm gfxmenu png font' --no-uefi-secure-boot --efi-directory=/boot/efi --removable --no-nvram
+chroot "$mountpoint" grub-install --target=i386-pc --modules='all_video gfxterm gfxmenu png font' "$target"
 chroot "$mountpoint" update-grub
 if [[ "$profile" == desktop ]]; then
     sed -i 's/^GRUB_DEFAULT=.*/GRUB_DEFAULT=openhd-desktop/' "$mountpoint/etc/default/grub"

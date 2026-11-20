@@ -1,0 +1,8 @@
+window { font-family: "Inter", sans-serif; font-size: 15px; color: #dce7f7; background-color: rgba(14, 21, 34, 0.98); border: 1px solid #37516b; border-radius: 20px; }
+#outer-box { padding: 20px; }
+#input { color: #e5eefb; background-color: #1b2a3e; border: 1px solid #334c68; border-radius: 12px; padding: 14px; margin-bottom: 14px; box-shadow: none; }
+#scroll { margin: 0; }
+#entry { padding: 13px 14px; border-radius: 12px; margin: 3px 0; }
+#entry:selected { background-color: #23465d; color: #b5f1f4; }
+#img { margin-right: 16px; }
+#text { margin: 0; }

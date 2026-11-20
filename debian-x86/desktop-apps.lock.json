@@ -1,0 +1,71 @@
+{
+  "apps": [
+    {
+      "asset": "^KiteGC_Linux_x64_.*_installer\\.deb$",
+      "asset_name": "KiteGC_Linux_x64_1.0.2_installer.deb",
+      "format": "deb",
+      "id": "kite-gc",
+      "name": "Kite GC",
+      "release_url": "https://github.com/b14ckyy/Kite-GC/releases/tag/v1.0.2",
+      "repo": "b14ckyy/Kite-GC",
+      "size": 22783088,
+      "upstream_digest": "sha256:91ddea2171189a6df158753b6075e9f9117bc7916a650ed9a0ac116e2efc2412",
+      "url": "https://github.com/b14ckyy/Kite-GC/releases/download/v1.0.2/KiteGC_Linux_x64_1.0.2_installer.deb",
+      "version": "v1.0.2"
+    },
+    {
+      "asset": "^ArduDeck-.*-linux-amd64\\.deb$",
+      "asset_name": "ArduDeck-0.1.2-linux-amd64.deb",
+      "format": "deb",
+      "id": "ardudeck",
+      "name": "ArduDeck",
+      "release_url": "https://github.com/rubenCodeforges/ardudeck/releases/tag/v0.1.2",
+      "repo": "rubenCodeforges/ardudeck",
+      "size": 171077432,
+      "upstream_digest": "sha256:d1d607ff10502bfb31f742a7882cd715a4e87e001eb36d2bf15586d82a67e184",
+      "url": "https://github.com/rubenCodeforges/ardudeck/releases/download/v0.1.2/ArduDeck-0.1.2-linux-amd64.deb",
+      "version": "v0.1.2"
+    },
+    {
+      "asset": "^QGroundControl-x86_64\\.AppImage$",
+      "asset_name": "QGroundControl-x86_64.AppImage",
+      "format": "appimage",
+      "id": "qgroundcontrol",
+      "name": "QGroundControl",
+      "release_url": "https://github.com/mavlink/qgroundcontrol/releases/tag/v5.1.5",
+      "repo": "mavlink/qgroundcontrol",
+      "size": 195332600,
+      "upstream_digest": "sha256:9a47e4cf269d9e4f897f582f6b19aa7ebf1e9e67c9d68a532a45b541354bc344",
+      "url": "https://github.com/mavlink/qgroundcontrol/releases/download/v5.1.5/QGroundControl-x86_64.AppImage",
+      "version": "v5.1.5"
+    },
+    {
+      "asset": "^INAV-Configurator_linux_x64_.*\\.deb$",
+      "asset_name": "INAV-Configurator_linux_x64_9.1.1.deb",
+      "format": "deb",
+      "id": "inav-configurator",
+      "name": "INAV Configurator",
+      "release_url": "https://github.com/iNavFlight/inav-configurator/releases/tag/9.1.1",
+      "repo": "iNavFlight/inav-configurator",
+      "size": 107065130,
+      "upstream_digest": "sha256:cf74be8e479224bd89b4703778c088fa1e278d324a9d1ae2cbd176e990cbe113",
+      "url": "https://github.com/iNavFlight/inav-configurator/releases/download/9.1.1/INAV-Configurator_linux_x64_9.1.1.deb",
+      "version": "9.1.1"
+    },
+    {
+      "asset": "^Betaflight-.*-amd64\\.deb$",
+      "asset_name": "Betaflight-2026.6.2-amd64.deb",
+      "format": "deb",
+      "id": "betaflight",
+      "name": "Betaflight Configurator",
+      "release_url": "https://github.com/betaflight/betaflight-configurator/releases/tag/2026.6.2",
+      "repo": "betaflight/betaflight-configurator",
+      "size": 14730968,
+      "upstream_digest": "sha256:c27bb2e1bb7a0e9ff01008d13cab47b045e6d1050f26dd7c345f4d9b8135657e",
+      "url": "https://github.com/betaflight/betaflight-configurator/releases/download/2026.6.2/Betaflight-2026.6.2-amd64.deb",
+      "version": "2026.6.2"
+    }
+  ],
+  "channel": "latest-stable",
+  "schema": 1
+}

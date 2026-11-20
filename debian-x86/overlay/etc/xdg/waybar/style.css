@@ -1,0 +1,19 @@
+* { font-family: "Inter", "Font Awesome 6 Free", "FontAwesome", sans-serif; font-size: 12px; font-weight: 500; min-height: 0; }
+window#waybar { background: rgba(13, 19, 31, 0.96); color: #c8d5e8; border: 1px solid rgba(110, 143, 183, 0.24); border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.24); }
+tooltip { background: #151f30; color: #e0eafb; border: 1px solid #344960; border-radius: 12px; }
+tooltip label { padding: 10px; }
+#custom-brand { color: #7ddce9; font-weight: 700; padding: 0 18px; }
+#workspaces button { color: #8299b5; border: 0; border-radius: 9px; padding: 0 9px; margin: 6px 2px; background: transparent; }
+#workspaces button.active { color: #bcf1f4; background: #284359; }
+#workspaces button:hover { background: #20364c; }
+#custom-launcher { background: #203147; color: #e4eefb; padding: 0 14px; border-radius: 10px; margin: 6px 8px 6px 0; }
+#custom-launcher:hover, #custom-power:hover, #custom-keyboard:hover { background: #2c435c; }
+#clock { color: #e0eafa; font-weight: 600; }
+#network, #battery, #tray { padding: 0 10px; }
+#battery.warning { color: #e9b96c; }
+#battery.critical { color: #f1878e; }
+#custom-keyboard, #custom-power { color: #a8c0dc; padding: 0 12px; margin: 6px 2px; border-radius: 10px; }
+#custom-power { margin-right: 8px; color: #8bcedf; }
+#taskbar button { padding: 4px 9px; margin: 5px 2px; border: 0; border-radius: 9px; background: transparent; }
+#taskbar button.active { background: #2c425c; }
+#taskbar button:hover { background: #21344c; }

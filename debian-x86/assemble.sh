@@ -27,7 +27,7 @@ printf 'search --no-floppy --fs-uuid --set=root %s\nset prefix=($root)/boot/grub
     "$root_uuid" >"$out/early.cfg"
 for platform in x86_64-efi i386-efi; do
     grub-mkstandalone -O "$platform" --locales='' --fonts='' \
-        --modules='part_gpt btrfs normal linux search search_fs_uuid configfile' \
+        --modules='part_gpt btrfs normal linux search search_fs_uuid configfile all_video gfxterm gfxmenu png font' \
         -o "$out/$platform.efi" "boot/grub/grub.cfg=$out/early.cfg"
 done
 rm -f "$out/efi.img"
@@ -80,7 +80,7 @@ dd if="$out/root.btrfs" of="$image" bs=512 seek="$root_start" conv=notrunc statu
 mkdir -p "$out/bios"
 cp /usr/lib/grub/i386-pc/boot.img "$out/bios/"
 grub-mkimage -O i386-pc -o "$out/bios/core.img" -p /boot/grub -c "$out/early.cfg" \
-    biosdisk part_gpt btrfs normal linux search search_fs_uuid configfile
+    biosdisk part_gpt btrfs normal linux search search_fs_uuid configfile all_video gfxterm gfxmenu png font
 loop=$(losetup --find --show --partscan "$image")
 trap 'losetup -d "$loop"' EXIT
 /usr/lib/grub/i386-pc/grub-bios-setup --skip-fs-probe -d "$out/bios" "$loop"

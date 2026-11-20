@@ -2,8 +2,17 @@
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 find "$here" -name '*.sh' -print0 | xargs -0 shellcheck
-shellcheck "$here/overlay/usr/local/sbin/"* "$here/overlay/etc/grub.d/09_openhd"
+for script in "$here/overlay/usr/local/sbin/"*; do
+    if head -1 "$script" | grep -q python; then
+        python3 -c 'import pathlib,sys; p=pathlib.Path(sys.argv[1]); compile(p.read_text(),str(p),"exec")' "$script"
+    else
+        shellcheck "$script"
+    fi
+done
+shellcheck "$here/overlay/etc/grub.d/09_openhd"
 python3 -m py_compile "$here/"*.py
+python3 -m unittest discover -s "$here/tests" -p 'test_*.py'
+if command -v luac >/dev/null; then luac -p "$here/overlay/etc/xdg/hypr/hyprland.lua"; fi
 menu=$(mktemp)
 trap 'rm -f "$menu"' EXIT
 sh "$here/overlay/usr/local/sbin/openhd-grub-menu" test-root vmlinuz-test >"$menu"
@@ -13,5 +22,5 @@ grep -q "menuentry 'Start QOpenHD in minimal mode'" "$menu"
 grep -q "menuentry 'Start OpenHD-OS'" "$menu"
 grep -q "menuentry 'Install OpenHD minimal'" "$menu"
 grep -q "menuentry 'Install OpenHD-OS'" "$menu"
-grep -q "submenu 'Advanced'" "$menu"
+grep -q "submenu 'Advanced options'" "$menu"
 echo 'PASS: shell, Python and GRUB menu checks'

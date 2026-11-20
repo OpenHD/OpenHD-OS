@@ -1,6 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=OpenHD-OS desktop
-Exec=/usr/local/sbin/openhd-desktop-style
-OnlyShowIn=XFCE;
-Terminal=false

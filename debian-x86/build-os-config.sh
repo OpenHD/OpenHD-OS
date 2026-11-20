@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Build the small distribution configuration package without component compilers.
+set -euo pipefail
+overlay=${1:?Usage: build-os-config.sh OVERLAY OUTPUT_DEB}
+output=$(realpath -m "${2:?Supply output .deb path}")
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+mkdir -p "$stage/DEBIAN"
+cp -a "$overlay/." "$stage/"
+find "$stage/etc" "$stage/usr" -type f ! -name '*.png' ! -name '*.pf2' -exec sed -i 's/\r$//' {} +
+find "$stage/etc" "$stage/usr" -type f -exec chmod 644 {} +
+find "$stage/etc" "$stage/usr" -type d -exec chmod 755 {} +
+find "$stage/usr/local/sbin" -type f -exec chmod 755 {} +
+chmod 755 "$stage/etc/grub.d/09_openhd"
+grub-mkfont -s 20 -o "$stage/usr/share/grub/themes/openhd/openhd.pf2" /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+grub-mkfont -s 12 -o "$stage/usr/share/grub/themes/openhd/console.pf2" /usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf
+printf '/etc/default/grub\n' >"$stage/DEBIAN/conffiles"
+cat >"$stage/DEBIAN/preinst" <<'PREINST'
+#!/bin/sh
+set -e
+dpkg-divert --package openhd-os --add --rename --divert /etc/issue.debian /etc/issue
+PREINST
+cat >"$stage/DEBIAN/postinst" <<'POSTINST'
+#!/bin/sh
+set -e
+if [ -d /run/systemd/system ]; then systemctl daemon-reload; fi
+systemctl mask getty@tty1.service autovt@tty1.service
+systemctl enable getty@tty2.service qopenhd.service openhd-installer.service openhd-grow-root.service
+rm -f /etc/grub.d/41_openhd_install /etc/openhd/usb-welcome
+chmod -x /etc/grub.d/10_linux /etc/grub.d/20_linux_xen /etc/grub.d/30_uefi-firmware 2>/dev/null || true
+if mountpoint -q /boot/efi; then update-grub; fi
+POSTINST
+chmod 755 "$stage/DEBIAN/preinst" "$stage/DEBIAN/postinst"
+cat >"$stage/DEBIAN/control" <<EOF
+Package: openhd-os
+Version: 0.2+$(date -u +%Y%m%d%H%M%S)
+Architecture: amd64
+Maintainer: OpenHD <developers@openhd.org>
+Depends: qopenhd, openhd, openhd-sys-utils, openhd-installer, init-system-helpers, grub2-common, rsync, btrfs-progs, dosfstools, gdisk, parted, librsvg2-common, python3-minimal
+Description: OpenHD OS boot menu, sessions and graphical installation backend
+EOF
+mkdir -p "$(dirname -- "$output")"
+dpkg-deb --root-owner-group --build "$stage" "$output"

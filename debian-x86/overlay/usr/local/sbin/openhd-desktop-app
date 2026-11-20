@@ -1,0 +1,47 @@
+#!/usr/bin/python3
+"""Launch desktop flight applications as the normal serial/render-capable user."""
+import json
+import os
+import pathlib
+import shutil
+import sys
+
+if len(sys.argv) < 2:
+    raise SystemExit("Select an application from the desktop menu")
+manifest = json.loads(pathlib.Path("/usr/share/openhd/desktop-apps.json").read_text())
+app = next((item for item in manifest["apps"] if item["id"] == sys.argv[1]), None)
+if not app:
+    raise SystemExit("Unknown desktop application")
+environment = dict(os.environ)
+for key in ("QT_QPA_EGLFS_INTEGRATION", "QT_QPA_EGLFS_KMS_ATOMIC", "QT_QPA_EGLFS_KMS_CONFIG", "QT_PLUGIN_PATH", "QML2_IMPORT_PATH"):
+    environment.pop(key, None)
+environment.update(QT_QPA_PLATFORM="xcb", QOPENHD_X86_KMS="0", QOPENHD_BOOT_ANIMATION="0")
+command = app["exec"] + sys.argv[2:]
+if app["format"] == "appimage":
+    environment["APPDIR"] = "/opt/openhd-apps/" + app["id"]
+if os.geteuid() == 0:
+    environment.pop("DBUS_SESSION_BUS_ADDRESS", None)
+    # The current appliance's desktop is root-owned. Give applications their own
+    # normal-user session and X cookie instead of disabling Chromium's sandbox.
+    import pwd
+    user = pwd.getpwnam("openhd")
+    runtime = pathlib.Path("/run/openhd-desktop-apps")
+    runtime.mkdir(mode=0o700, exist_ok=True)
+    os.chown(runtime, user.pw_uid, user.pw_gid)
+    authority = pathlib.Path(environment.get("XAUTHORITY", "/root/.Xauthority"))
+    if not authority.is_file():
+        raise SystemExit("The desktop X authority is unavailable")
+    authdir = pathlib.Path("/run/openhd-app-auth")
+    authdir.mkdir(mode=0o750, exist_ok=True)
+    if authdir.is_symlink() or authdir.stat().st_uid != 0:
+        raise SystemExit("Invalid desktop authority directory")
+    os.chown(authdir, 0, user.pw_gid)
+    cookie = authdir / "Xauthority"
+    if cookie.is_symlink():
+        raise SystemExit("Invalid desktop authority file")
+    shutil.copyfile(authority, cookie)
+    cookie.chmod(0o640)
+    os.chown(cookie, 0, user.pw_gid)
+    environment.update(HOME=user.pw_dir, USER="openhd", LOGNAME="openhd", XAUTHORITY=str(cookie), XDG_RUNTIME_DIR=str(runtime))
+    command = ["runuser", "-u", "openhd", "--", "dbus-run-session", "--"] + command
+os.execvpe(command[0], command, environment)
