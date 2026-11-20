@@ -16,7 +16,7 @@ chroot "$work/root" apt-get update
 chroot "$work/root" apt-get -t trixie-backports install -y --no-install-recommends \
     hyprland xdg-desktop-portal-hyprland \
     greetd quickshell mako-notifier swaybg foot xwayland thunar \
-    dbus-x11 wvkbd network-manager-gnome arc-theme papirus-icon-theme \
+    dbus-x11 qt6-wayland wvkbd network-manager-gnome arc-theme papirus-icon-theme \
     fonts-inter fonts-font-awesome libnotify-bin brightnessctl \
     pipewire pipewire-pulse wireplumber xdg-desktop-portal-gtk
 chroot "$work/root" apt-get purge -y xfce4-session xfce4-panel xfwm4 xfdesktop4 \
