@@ -68,7 +68,7 @@ jobs:
           name: debian-amd64-packages
           path: /opt/openhd-os-work/builder/packages/*.deb
       - uses: actions/upload-artifact@v4
-        if: inputs.output != 'packages'
+        if: always() && inputs.output != 'packages'
         with:
           name: ${{ inputs.output }}
           path: |
@@ -76,6 +76,7 @@ jobs:
             /opt/openhd-os-work/output/SHA256SUMS
             /opt/openhd-os-work/output/*report.txt
             /opt/openhd-os-work/output/vm-test/*.png
+            /opt/openhd-os-work/output/vm-test/failure-diagnostics.txt
             /opt/openhd-os-work/output/packages.tsv
             /opt/openhd-os-work/desktop-apps.lock.json
           retention-days: 7
