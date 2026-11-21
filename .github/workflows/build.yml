@@ -10,7 +10,7 @@ on:
         default: false
       openhd_ref:
         type: string
-        default: openhd-3.0
+        default: dev-release
       qopenhd_ref:
         type: string
         default: dev-release
@@ -24,7 +24,7 @@ on:
         options: [desktop-image, packages]
         default: desktop-image
       openhd_ref:
-        default: openhd-3.0
+        default: dev-release
       qopenhd_ref:
         default: dev-release
       sysutils_ref:
