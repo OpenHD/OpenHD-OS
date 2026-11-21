@@ -3,7 +3,6 @@
 import json
 import os
 import pathlib
-import shutil
 import sys
 
 if len(sys.argv) < 2:
@@ -42,7 +41,7 @@ if os.geteuid() == 0:
     if cookie.is_symlink():
         raise SystemExit("Invalid desktop authority file")
     if authority.is_file():
-        shutil.copyfile(authority, cookie)
+        cookie.write_bytes(authority.read_bytes())
         cookie.chmod(0o640)
         os.chown(cookie, 0, user.pw_gid)
         environment["XAUTHORITY"] = str(cookie)
