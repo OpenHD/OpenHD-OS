@@ -1,10 +1,53 @@
 #!/bin/sh
 set -eu
+qs_config=/usr/share/openhd/desktop-config/quickshell
 case "${1:-}" in
     keyboard)
         if pgrep -x wvkbd-mobintl >/dev/null; then pkill -x wvkbd-mobintl; else wvkbd-mobintl & fi
         ;;
     power)
-        exec qs ipc call launcher power
+        exec qs -p "$qs_config" ipc call desktop power
+        ;;
+    network)
+        exec qs -p "$qs_config" ipc call desktop network
+        ;;
+    volume-up|volume-down|volume-mute|brightness-up|brightness-down)
+        action=$1
+        # Serialize rapid key repeats so the readback matches the applied change.
+        exec 9>"${XDG_RUNTIME_DIR:?}/openhd-media-controls.lock"
+        flock 9
+        case "$action" in
+            volume-*)
+                title=Volume
+                sink=@DEFAULT_AUDIO_SINK@
+                case "$action" in
+                    volume-up) set -- set-volume -l 1 "$sink" 5%+ ;;
+                    volume-down) set -- set-volume "$sink" 5%- ;;
+                    volume-mute) set -- set-mute "$sink" toggle ;;
+                esac
+                if wpctl "$@" && state=$(wpctl get-volume "$sink"); then
+                    case "$state" in
+                        *'[MUTED]'*) title=Muted; level=0 ;;
+                        *) level=$(printf '%s\n' "$state" | LC_ALL=C awk '{printf "%d", $2 * 100 + 0.5}') ;;
+                    esac
+                else
+                    title="No audio output"; level=-1
+                fi
+                ;;
+            brightness-*)
+                title=Brightness
+                case "$action" in
+                    brightness-up) step=5%+ ;;
+                    brightness-down) step=5%- ;;
+                esac
+                if brightnessctl -q -c backlight -n 1 set "$step" &&
+                    state=$(brightnessctl -m -c backlight info); then
+                    level=$(printf '%s\n' "$state" | awk -F, 'NR==1 {print $4 + 0}')
+                else
+                    title="Brightness unavailable"; level=-1
+                fi
+                ;;
+        esac
+        qs -p "$qs_config" ipc call -- desktop hud "$title" "$level" || true
         ;;
 esac

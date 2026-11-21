@@ -16,13 +16,14 @@ chroot "$work/root" apt-get update
 chroot "$work/root" apt-get -t trixie-backports install -y --no-install-recommends \
     hyprland xdg-desktop-portal-hyprland \
     greetd quickshell mako-notifier foot xwayland thunar \
-    dbus-x11 qt6-wayland wvkbd network-manager-gnome arc-theme papirus-icon-theme \
-    fonts-inter fonts-font-awesome libnotify-bin brightnessctl \
-    pipewire pipewire-pulse wireplumber xdg-desktop-portal-gtk
+    dbus-x11 qt6-wayland wvkbd network-manager-applet lxpolkit arc-theme papirus-icon-theme \
+    fonts-inter fonts-font-awesome libnotify-bin brightnessctl brightness-udev \
+    pipewire pipewire-pulse wireplumber alsa-ucm-conf firmware-sof-signed pavucontrol xdg-desktop-portal-gtk
 chroot "$work/root" apt-get purge -y xfce4-session xfce4-panel xfwm4 xfdesktop4 \
     xfce4-settings xinit xterm xserver-xorg-core xserver-xorg-input-libinput
 # The appliance service owns tty1 and starts greetd only in desktop mode.
 chroot "$work/root" systemctl mask greetd.service
+chroot "$work/root" systemctl --global enable pipewire.socket pipewire-pulse.socket wireplumber.service
 chroot "$work/root" apt-get clean
 # shellcheck disable=SC2016
 chroot "$work/root" dpkg-query -W -f='${Package}\t${Version}\t${Installed-Size}\n' >"$work/packages.tsv"

@@ -4,15 +4,50 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Hyprland
+import Quickshell.Services.Pipewire
+import Quickshell.Services.SystemTray
 
 ShellRoot {
     id: shell
     property string networkState: "Checking"
-    property string volumeState: ""
     property string batteryState: ""
     property string clockText: Qt.formatDateTime(new Date(), "HH:mm")
-    property bool launcherOpen: true
-    property bool powerOpen: false
+    property string activeMenu: ""
+    property string hudTitle: ""
+    property int hudLevel: -1
+    readonly property var audio: Pipewire.defaultAudioSink?.audio ?? null
+    readonly property var networkItem: SystemTray.items.values.find(item => /^nm[-_]applet$/.test(item.id)) ?? null
+
+    function toggleMenu(name) {
+        activeMenu = activeMenu === name ? "" : name
+    }
+
+    function openNetwork() {
+        activeMenu = ""
+        if (networkItem?.hasMenu)
+            networkMenu.open()
+        else
+            Quickshell.execDetached(["nm-connection-editor"])
+    }
+
+    function showHud(title, level) {
+        hudTitle = title
+        hudLevel = level
+        hudTimeout.restart()
+    }
+
+    PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
+
+    IpcHandler {
+        target: "desktop"
+        function power(): void { shell.toggleMenu("power") }
+        function network(): void { shell.openNetwork() }
+        function hud(title: string, level: int): void {
+            shell.showHud(title, level)
+        }
+    }
+    Timer { id: hudTimeout; interval: 1500 }
 
     FileView {
         id: appFile
@@ -21,14 +56,15 @@ ShellRoot {
     }
 
     Timer { interval: 30000; running: true; repeat: true; onTriggered: shell.clockText = Qt.formatDateTime(new Date(), "HH:mm") }
-    Timer { interval: 10000; running: true; repeat: true; onTriggered: { networkProbe.running = true; audioProbe.running = true; batteryProbe.running = true } }
-    Component.onCompleted: { networkProbe.running = true; audioProbe.running = true; batteryProbe.running = true }
+    Timer { interval: 10000; running: true; repeat: true; onTriggered: { networkProbe.running = true; batteryProbe.running = true } }
+    Component.onCompleted: { networkProbe.running = true; batteryProbe.running = true }
 
     PanelWindow {
         anchors { top: true; left: true; right: true; bottom: true }
         color: "#010409"
         exclusiveZone: 0
         WlrLayershell.layer: WlrLayer.Background
+        mask: Region {}
         AlbatrossBackdrop { anchors.fill: parent }
     }
 
@@ -37,12 +73,6 @@ ShellRoot {
         command: ["sh", "-c", "nmcli -t -f CONNECTIVITY general 2>/dev/null || true"]
         stdout: StdioCollector { id: networkOutput }
         onExited: (code) => { shell.networkState = code === 0 && networkOutput.text.trim() ? networkOutput.text.trim() : "Unavailable" }
-    }
-    Process {
-        id: audioProbe
-        command: ["sh", "-c", "wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null || true"]
-        stdout: StdioCollector { id: audioOutput }
-        onExited: (code) => { shell.volumeState = code === 0 ? audioOutput.text.trim() : "" }
     }
     Process {
         id: batteryProbe
@@ -69,22 +99,76 @@ ShellRoot {
                 anchors.leftMargin: 20
                 anchors.rightMargin: 20
                 spacing: 10
-                Image { source: "file:///usr/share/openhd/brand/openhd-mark.png"; sourceSize.width: 28; sourceSize.height: 28; fillMode: Image.PreserveAspectFit }
-                Row {
-                    spacing: 0
-                    Text { text: "OpenHD"; color: "#f4f8fc"; font.family: "Inter"; font.pixelSize: 18; font.weight: Font.DemiBold }
-                    Text { text: "-OS"; color: "#00c8f2"; font.family: "Inter"; font.pixelSize: 18; font.weight: Font.DemiBold }
+                Button {
+                    id: brandButton
+                    Layout.fillHeight: true
+                    horizontalPadding: 5
+                    Accessible.name: "Power menu"
+                    onClicked: shell.toggleMenu("power")
+                    background: Rectangle { radius: 8; color: brandButton.hovered || shell.activeMenu === "power" ? "#294057" : "transparent" }
+                    contentItem: RowLayout {
+                        spacing: 6
+                        Image {
+                            Layout.preferredWidth: 30
+                            Layout.preferredHeight: 30
+                            source: "file:///usr/share/openhd/brand/openhd-mark.png"
+                            sourceSize: Qt.size(192, 192)
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            mipmap: true
+                        }
+                        Text {
+                            text: 'OpenHD<span style="color:#00c8f2">-OS</span>'
+                            textFormat: Text.StyledText
+                            color: "#f4f8fc"
+                            font.family: "Inter"
+                            font.pixelSize: 18
+                            font.weight: Font.DemiBold
+                        }
+                    }
                 }
                 Item { Layout.fillWidth: true }
-                Text {
-                    text: "\uf1eb"
-                    color: shell.networkState === "full" || shell.networkState === "limited" ? "#e9f2fb" : "#718093"
-                    font.family: "FontAwesome"
-                    font.pixelSize: 16
+                Button {
+                    id: networkButton
+                    Layout.preferredWidth: 42
+                    Layout.fillHeight: true
                     Accessible.name: "Network " + shell.networkState
-                    TapHandler { onTapped: Quickshell.execDetached(["nm-connection-editor"]) }
+                    onClicked: shell.openNetwork()
+                    background: Rectangle { radius: 8; color: networkButton.hovered ? "#294057" : "transparent" }
+                    contentItem: Text {
+                        visible: !networkIcon.visible
+                        text: "\uf1eb"
+                        color: shell.networkState === "full" || shell.networkState === "limited" ? "#e9f2fb" : "#718093"
+                        font.family: "FontAwesome"
+                        font.pixelSize: 16
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    Image {
+                        id: networkIcon
+                        anchors.centerIn: parent
+                        width: 20
+                        height: 20
+                        source: shell.networkItem?.icon ?? ""
+                        visible: status === Image.Ready
+                    }
                 }
-                Text { text: shell.volumeState.includes("MUTED") ? "\uf026" : "\uf028"; color: shell.volumeState ? "#e9f2fb" : "#718093"; font.family: "FontAwesome"; font.pixelSize: 16; Accessible.name: "Audio " + shell.volumeState }
+                Button {
+                    id: audioButton
+                    Layout.preferredWidth: 42
+                    Layout.fillHeight: true
+                    Accessible.name: "Sound controls"
+                    onClicked: shell.toggleMenu("audio")
+                    background: Rectangle { radius: 8; color: audioButton.hovered || shell.activeMenu === "audio" ? "#294057" : "transparent" }
+                    contentItem: Text {
+                        text: shell.audio && !shell.audio.muted ? "\uf028" : "\uf026"
+                        color: shell.audio ? "#e9f2fb" : "#718093"
+                        font.family: "FontAwesome"
+                        font.pixelSize: 16
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
                 Text { visible: shell.batteryState !== ""; text: (Number(shell.batteryState) >= 90 ? "\uf240" : Number(shell.batteryState) >= 65 ? "\uf241" : Number(shell.batteryState) >= 40 ? "\uf242" : Number(shell.batteryState) >= 15 ? "\uf243" : "\uf244") + "  " + shell.batteryState + "%"; color: "#e9f2fb"; font.family: "FontAwesome"; font.pixelSize: 14; Accessible.name: "Battery " + shell.batteryState + " percent" }
                 Rectangle { width: 1; height: 20; color: "#52667a"; Layout.leftMargin: 4; Layout.rightMargin: 4 }
                 Text { text: shell.clockText; color: "#f4f8fc"; font.family: "Inter"; font.pixelSize: 16; Layout.minimumWidth: 48; horizontalAlignment: Text.AlignRight }
@@ -92,19 +176,27 @@ ShellRoot {
         }
     }
 
+    QsMenuAnchor {
+        id: networkMenu
+        menu: shell.networkItem?.menu ?? null
+        anchor.item: networkButton
+        anchor.edges: Edges.Bottom | Edges.Right
+        anchor.gravity: Edges.Bottom | Edges.Left
+    }
+
     PanelWindow {
         id: launcherWindow
-        visible: shell.launcherOpen
-        focusable: shell.launcherOpen
         anchors { top: true; left: true; right: true; bottom: true }
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
-        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.layer: WlrLayer.Bottom
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+        mask: Region { item: launcher }
         Item {
             anchors.fill: parent
-            focus: shell.launcherOpen
+            focus: true
             Keys.onPressed: event => {
-                if (event.key === Qt.Key_Escape) { shell.launcherOpen = false; event.accepted = true }
+                if (event.key === Qt.Key_Escape) { search.clear(); event.accepted = true }
                 else if (event.key === Qt.Key_Left) { launcher.moveSelection(-1); event.accepted = true }
                 else if (event.key === Qt.Key_Right) { launcher.moveSelection(1); event.accepted = true }
                 else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) { launcher.launchSelected(); event.accepted = true }
@@ -129,7 +221,7 @@ ShellRoot {
                     // Dispatch here so X11 apps inherit the current display.
                     Quickshell.execDetached(["hyprctl", "dispatch",
                         'hl.dsp.exec_cmd("/usr/local/sbin/openhd-desktop-app ' + appId + '")'])
-                    shell.launcherOpen = false
+                    search.clear()
                 }
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: Math.min(parent.height * 0.64 - height / 2, parent.height - height - 20)
@@ -139,7 +231,7 @@ ShellRoot {
                 color: "#d90b1725"
                 border.width: 1
                 border.color: "#805184a3"
-                focus: shell.launcherOpen
+                focus: true
                 Keys.forwardTo: [search]
                 ColumnLayout {
                     anchors.fill: parent
@@ -171,11 +263,10 @@ ShellRoot {
                                 onTextChanged: launcher.selectedIndex = 0
                                 Keys.onReturnPressed: launcher.launchSelected()
                                 Keys.onEnterPressed: launcher.launchSelected()
-                                Keys.onEscapePressed: shell.launcherOpen = false
+                                Keys.onEscapePressed: search.clear()
                                 Keys.onLeftPressed: event => { if (cursorPosition === 0) { launcher.moveSelection(-1); event.accepted = true } }
                                 Keys.onRightPressed: event => { if (cursorPosition === text.length) { launcher.moveSelection(1); event.accepted = true } }
                             }
-                            Text { text: "Ctrl + Space"; color: "#a9b8c9"; font.family: "Inter"; font.pixelSize: 13 }
                         }
                     }
                     RowLayout {
@@ -228,46 +319,127 @@ ShellRoot {
                 }
                 Component.onCompleted: search.forceActiveFocus()
             }
-            IpcHandler {
-                target: "launcher"
-                function toggle(): void {
-                    shell.launcherOpen = !shell.launcherOpen
-                    if (shell.launcherOpen) search.forceActiveFocus()
+        }
+    }
+
+    PopupWindow {
+        id: controlsMenu
+        visible: shell.activeMenu !== ""
+        anchor.item: shell.activeMenu === "power" ? brandButton : audioButton
+        anchor.edges: shell.activeMenu === "power" ? Edges.Bottom | Edges.Left : Edges.Bottom | Edges.Right
+        anchor.gravity: shell.activeMenu === "power" ? Edges.Bottom | Edges.Right : Edges.Bottom | Edges.Left
+        implicitWidth: 278
+        implicitHeight: menuContents.implicitHeight + 28
+        color: "transparent"
+
+        HyprlandFocusGrab {
+            windows: [topBar, controlsMenu]
+            active: controlsMenu.visible
+            onCleared: shell.activeMenu = ""
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 14
+            color: "#ed0b1725"
+            border.width: 1
+            border.color: "#805184a3"
+            focus: true
+            Keys.onEscapePressed: shell.activeMenu = ""
+            ColumnLayout {
+                id: menuContents
+                anchors { top: parent.top; left: parent.left; right: parent.right; margins: 14 }
+                spacing: 6
+                Text { text: shell.activeMenu === "power" ? "Power" : "Sound"; color: "#f4f8fc"; font.family: "Inter"; font.pixelSize: 16; font.weight: Font.DemiBold }
+                Button {
+                    visible: shell.activeMenu === "power"
+                    Layout.fillWidth: true
+                    text: "Restart"
+                    onClicked: powerAction.run("reboot")
                 }
-                function power(): void { shell.powerOpen = !shell.powerOpen }
-            }
-            MouseArea {
-                anchors.fill: parent
-                z: -1
-                enabled: shell.launcherOpen
-                onClicked: shell.launcherOpen = false
+                Button {
+                    visible: shell.activeMenu === "power"
+                    Layout.fillWidth: true
+                    text: "Shut down"
+                    onClicked: powerAction.run("poweroff")
+                }
+                Text {
+                    visible: shell.activeMenu === "audio"
+                    text: !shell.audio ? "No audio output" : shell.audio.muted ? "Muted" : Math.round(shell.audio.volume * 100) + "%"
+                    color: "#b6c7d8"
+                    font.family: "Inter"
+                }
+                Slider {
+                    visible: shell.activeMenu === "audio"
+                    enabled: shell.audio !== null
+                    Layout.fillWidth: true
+                    Accessible.name: "Output volume"
+                    value: shell.audio ? Math.min(1, shell.audio.volume) : 0
+                    onMoved: if (shell.audio) shell.audio.volume = value
+                }
+                Button {
+                    visible: shell.activeMenu === "audio"
+                    enabled: shell.audio !== null
+                    Layout.fillWidth: true
+                    text: shell.audio?.muted ? "Unmute" : "Mute"
+                    onClicked: if (shell.audio) shell.audio.muted = !shell.audio.muted
+                }
+                Button {
+                    visible: shell.activeMenu === "audio"
+                    Layout.fillWidth: true
+                    text: "Sound settings"
+                    onClicked: {
+                        shell.activeMenu = ""
+                        Quickshell.execDetached(["pavucontrol"])
+                    }
+                }
             }
         }
     }
 
+    Process {
+        id: powerAction
+        function run(action) {
+            shell.activeMenu = ""
+            if (!running) {
+                command = ["systemctl", action]
+                running = true
+            }
+        }
+        onExited: code => { if (code !== 0) shell.showHud("Power action failed", -1) }
+    }
+
     PanelWindow {
-        visible: shell.powerOpen
-        anchors { top: true; left: true; right: true; bottom: true }
-        focusable: shell.powerOpen
+        visible: hudTimeout.running
+        anchors.bottom: true
+        margins.bottom: 40
+        implicitWidth: 276
+        implicitHeight: 76
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Overlay
+        mask: Region {}
         Rectangle {
-            anchors.centerIn: parent
-            width: 310
-            height: 220
-            radius: 18
+            anchors.fill: parent
+            radius: 14
             color: "#ed0b1725"
-            border.width: 1
             border.color: "#805184a3"
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 20
-                spacing: 12
-                Text { text: "Power"; color: "#f4f8fc"; font.family: "Inter"; font.pixelSize: 20; font.weight: Font.DemiBold }
-                Button { Layout.fillWidth: true; text: "Restart"; onClicked: { Quickshell.execDetached(["systemctl", "reboot"]); shell.powerOpen = false } }
-                Button { Layout.fillWidth: true; text: "Shut down"; onClicked: { Quickshell.execDetached(["systemctl", "poweroff"]); shell.powerOpen = false } }
-                Button { Layout.fillWidth: true; text: "Cancel"; onClicked: shell.powerOpen = false }
+                anchors.margins: 14
+                Text {
+                    text: shell.hudLevel < 0 ? shell.hudTitle : shell.hudTitle + "   " + shell.hudLevel + "%"
+                    color: "#f4f8fc"
+                    font.family: "Inter"
+                    font.pixelSize: 15
+                    font.weight: Font.DemiBold
+                }
+                ProgressBar {
+                    visible: shell.hudLevel >= 0
+                    Layout.fillWidth: true
+                    to: 100
+                    value: Math.min(100, shell.hudLevel)
+                }
             }
         }
     }

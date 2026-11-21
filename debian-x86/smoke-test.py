@@ -145,6 +145,30 @@ class Guest:
         self.run("journalctl -b -u qopenhd --no-pager -n 80")
         self.screenshot("openhd-os-desktop")
 
+    def desktop_controls(self):
+        session = (
+            "session_bus=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p'); "
+            "runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=\"$session_bus\" "
+        )
+        control = "qs -p /usr/share/openhd/desktop-config/quickshell ipc"
+        self.run(session + control + " show | grep -F 'target desktop'")
+        self.run("pgrep -x nm-applet && pgrep -x lxpolkit && systemctl is-active NetworkManager")
+
+        self.click(640, 700)  # Clicking bare desktop must leave the launcher visible.
+        self.screenshot("desktop-launcher-persistent")
+        self.click(67, 32)
+        self.screenshot("desktop-power-menu")
+        self.click(640, 700)
+        self.click(1150, 32)
+        self.screenshot("desktop-sound-menu")
+        self.click(640, 700)
+        self.run(session + "/usr/local/sbin/openhd-shell-action network")
+        self.screenshot("desktop-network-menu")
+        self.click(640, 700)
+        # Check the visible feedback without depending on VM backlight support.
+        self.run(session + control + " call desktop hud Brightness 65")
+        self.screenshot("desktop-brightness-hud")
+
     def click(self, x, y):
         self.qmp_command("input-send-event", {"events": [
             {"type": "abs", "data": {"axis": "x", "value": int(x * 32767 / 1280)}},
@@ -307,6 +331,7 @@ def main():
             guest.run("grep -qw openhd.mode=desktop /proc/cmdline")
             guest.run("timeout 90 sh -c 'until pgrep -x Hyprland; do sleep 1; done'", timeout=100)
             guest.desktop_ui()
+            guest.desktop_controls()
             guest.run("systemctl is-active qopenhd openhd openhd-sys-utils")
             guest.shutdown(allow_forced_exit=True)
             print("PASS: unified image boots Hyprland desktop and minimal QOpenHD from the same installation", flush=True)

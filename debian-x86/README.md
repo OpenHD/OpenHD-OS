@@ -54,23 +54,27 @@ The optional desktop is a Hyprland session with a single Quickshell interface.
 It uses the supplied Albatross 3.0 wallpaper unchanged, a slim OpenHD-OS status
 bar, and a centered five-app launcher for QOpenHD, ArduDeck, Kite GCS, INAV and
 Betaflight. Search filters the installed launch entries; arrow keys and Enter
-launch the selected app, Escape hides the launcher, and Ctrl+Space opens it again.
+launch the selected app and Escape clears the search. The launcher stays on the
+desktop beneath application windows.
 Tiles use official upstream app artwork at consistent display sizes; their
 sources are listed in `BRAND-ASSETS.md`.
 Flight tools are resolved from their installed `.desktop` launchers and refreshed
 from upstream stable releases by the image builder. QGroundControl is also
 installed and remains available from the applications list/search.
 
-The bar reads connectivity from NetworkManager, volume from PipeWire's `wpctl`,
+The bar shows NetworkManager status, the active PipeWire output,
 battery from the system's battery supply (hidden on desktops without one), and
 time from the system clock. Quickshell is installed from Debian 13 backports.
 Configuration is in `overlay/usr/share/openhd/desktop-config/quickshell/shell.qml`;
 launcher entries are generated from installed app launchers into
-`/usr/share/openhd/launcher-apps.json`. The same launcher can be opened with
-Ctrl+Space while another window is active. Ctrl+Alt+F2 opens the maintenance
-console; Ctrl+Alt+F1 returns to the graphical session.
-Tap the network indicator or press Super+N to open Wi-Fi/network settings; press
-Super+K to show the on-screen keyboard on touch devices.
+`/usr/share/openhd/launcher-apps.json`. Ctrl+Alt+F2 opens the maintenance console
+and Ctrl+Alt+F1 returns to the graphical session.
+
+- Click the network icon or press Super+N to open NetworkManager's connection menu.
+- Click the speaker icon for volume, mute, and the full sound settings.
+- Click the OpenHD logo for Restart and Shut down.
+- Keyboard media keys adjust volume or the display backlight and show the new level.
+- Super+K opens the on-screen keyboard on touch devices.
 
 Hyprland and the Quickshell session use Wayland with XWayland for the installed
 Qt flight applications. QOpenHD in this desktop variant uses its X11 rendering
