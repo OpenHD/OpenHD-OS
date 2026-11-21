@@ -39,6 +39,8 @@ flight() {
     # Let the logind-backed compositor finish releasing its seat and KMS.
     if [ -n "$desktop_session" ] &&
         [ "$(loginctl show-session "$desktop_session" -p VTNr --value)" = 2 ]; then
+        # The session ID is positional in the child shell.
+        # shellcheck disable=SC2016
         timeout 5 sh -c '
             while [ "$(loginctl show-session "$1" -p Active --value)" = yes ]; do
                 sleep 0.1
