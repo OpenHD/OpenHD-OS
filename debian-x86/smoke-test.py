@@ -371,6 +371,8 @@ def main():
             guest.run("pgrep -x Hyprland >/run/desktop-before-switch; systemctl is-active openhd openhd-sys-utils")
             guest.send_shortcut("ctrl", "alt", "delete")
             guest.run("timeout 15 sh -c 'until pgrep -fu openhd \"(^|/)gnome-system-monitor([[:space:]]|$)\"; do sleep 0.25; done'")
+            guest.run("pid=$(pgrep -fu openhd '^/usr/bin/gnome-system-monitor([[:space:]]|$)') && "
+                      "tr '\\0' '\\n' </proc/\"$pid\"/environ | grep -Eq '^XDG_CONFIG_HOME=.*/openhd/task-manager$'")
             guest.screenshot("task-manager")
             guest.view_shortcut()
             guest.wait_view("flight", 1)

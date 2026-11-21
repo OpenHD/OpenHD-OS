@@ -135,7 +135,7 @@ ShellRoot {
         function network(): void { shell.openNetwork() }
         function flight(): void { shell.switchSession("flight") }
         function install(): void { shell.switchSession("install") }
-        function taskManager(): void { Quickshell.execDetached(["gnome-system-monitor"]) }
+        function taskManager(): void { Quickshell.execDetached(["/usr/local/sbin/openhd-task-manager"]) }
         function hud(title: string, level: int): void {
             shell.showHud(title, level)
         }
@@ -514,7 +514,7 @@ ShellRoot {
                     text: "Task Manager"
                     onClicked: {
                         shell.activeMenu = ""
-                        Quickshell.execDetached(["gnome-system-monitor"])
+                        Quickshell.execDetached(["/usr/local/sbin/openhd-task-manager"])
                     }
                 }
                 Rectangle {

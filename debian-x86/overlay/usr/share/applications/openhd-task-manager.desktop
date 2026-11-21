@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Task Manager
+Comment=Manage processes and view system resources
+Exec=/usr/local/sbin/openhd-task-manager
+TryExec=/usr/bin/gnome-system-monitor
+Icon=org.gnome.SystemMonitor
+Categories=System;Monitor;
+Terminal=false

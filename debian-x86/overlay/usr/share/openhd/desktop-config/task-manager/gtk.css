@@ -1,0 +1,85 @@
+/* The Albatross palette for GNOME System Monitor. */
+@define-color window_bg_color #0b1725;
+@define-color window_fg_color #edf4fa;
+@define-color view_bg_color #101d2f;
+@define-color view_fg_color #edf4fa;
+@define-color headerbar_bg_color #142436;
+@define-color headerbar_fg_color #edf4fa;
+@define-color headerbar_border_color #3e576b;
+@define-color headerbar_backdrop_color #101d2f;
+@define-color accent_color #42cef4;
+@define-color accent_bg_color #154660;
+@define-color accent_fg_color #effaff;
+@define-color card_bg_color #142436;
+@define-color card_fg_color #edf4fa;
+@define-color popover_bg_color #172635;
+@define-color popover_fg_color #edf4fa;
+@define-color dialog_bg_color #142436;
+@define-color dialog_fg_color #edf4fa;
+
+window {
+  color: @window_fg_color;
+  background-color: @window_bg_color;
+  font-family: Inter, sans-serif;
+}
+
+/* The desktop supplies the title bar. Keep the app's tabs and toolbar here. */
+headerbar {
+  color: @headerbar_fg_color;
+  background-image: linear-gradient(to bottom, #192b3d, #111f30);
+  border-bottom: 1px solid @headerbar_border_color;
+}
+
+viewswitcher button {
+  color: #b6cad9;
+  border-radius: 6px;
+}
+
+viewswitcher button:hover {
+  background-color: #223b52;
+}
+
+viewswitcher button:checked {
+  color: #e8faff;
+  background-color: #19384c;
+  box-shadow: inset 0 -2px @accent_color;
+}
+
+treeview.view {
+  background-color: @view_bg_color;
+  color: @view_fg_color;
+}
+
+treeview.view header button {
+  color: #adc3d5;
+  background-color: @headerbar_bg_color;
+  border-bottom: 1px solid @headerbar_border_color;
+}
+
+treeview.view:selected,
+treeview.view row:selected,
+columnview row:selected {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+}
+
+/* System Monitor reads this foreground color for its graph axes and grid. */
+.loadgraph {
+  color: #a9c7da;
+}
+
+label.heading {
+  color: #77d9f0;
+}
+
+entry:focus-within,
+button:focus-visible {
+  outline-color: @accent_color;
+}
+
+popover > contents {
+  background-color: @popover_bg_color;
+  color: @popover_fg_color;
+  border: 1px solid #536275;
+  border-radius: 6px;
+}

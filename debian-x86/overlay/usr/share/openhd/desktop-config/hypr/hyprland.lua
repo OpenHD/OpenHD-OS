@@ -66,7 +66,7 @@ hl.bind("SUPER + N", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action networ
 hl.bind("SUPER + Tab", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action flight"))
 hl.bind("ALT + Tab", hl.dsp.window.cycle_next())
 hl.bind("ALT + SHIFT + Tab", hl.dsp.window.cycle_next({ next = false }))
-hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("gnome-system-monitor"))
+hl.bind("CTRL + ALT + Delete", hl.dsp.exec_cmd("/usr/local/sbin/openhd-task-manager"))
 hl.bind("ALT + F4", hl.dsp.window.close())
 hl.bind("SUPER + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind("SUPER + C", hl.dsp.window.close())

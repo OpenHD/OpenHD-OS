@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+# GTK reads gtk.css from XDG_CONFIG_HOME. Use a separate writable config for
+# this app so the OpenHD style does not affect other GTK applications.
+assets=/usr/share/openhd/desktop-config/task-manager
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/openhd/task-manager"
+umask 077
+mkdir -p "$XDG_CONFIG_HOME/gtk-4.0"
+ln -sfn "$assets/gtk.css" "$XDG_CONFIG_HOME/gtk-4.0/gtk.css"
+ln -sfn "$assets/settings.ini" "$XDG_CONFIG_HOME/gtk-4.0/settings.ini"
+
+# Keep the monitor's saved tab, columns and window size in the same directory.
+export GSETTINGS_BACKEND=keyfile
+unset GTK_THEME
+exec /usr/bin/gnome-system-monitor "$@"
