@@ -224,8 +224,9 @@ class Guest:
             self.run("timeout 10 sh -c 'until test -f /home/openhd/.local/state/openhd/apps/kite-gc.log; do sleep 0.25; done'")
             self.run("timeout 35 sh -c " + shlex.quote("until " + hyprctl + "clients | grep -q '^Window '; do sleep 0.25; done"))
             self.screenshot("kite-gc-from-launcher")
-            self.send_shortcut("alt", "f4")
+            # Exercise the menu with a foreground application underneath it.
             self.click(67, 32)
+            self.screenshot("desktop-power-menu-over-app")
             self.click(140, 78)
         self.wait_view("installer", 1)
         self.installer_page(1)
@@ -233,7 +234,9 @@ class Guest:
     def click(self, x, y):
         self.qmp_command("input-send-event", {"events": [
             {"type": "abs", "data": {"axis": "x", "value": int(x * 32767 / 1280)}},
-            {"type": "abs", "data": {"axis": "y", "value": int(y * 32767 / 800)}},
+            {"type": "abs", "data": {"axis": "y", "value": int(y * 32767 / 800)}}]})
+        time.sleep(0.1)
+        self.qmp_command("input-send-event", {"events": [
             {"type": "btn", "data": {"button": "left", "down": True}}]})
         time.sleep(0.1)
         self.qmp_command("input-send-event", {"events": [

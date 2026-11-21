@@ -695,31 +695,37 @@ ShellRoot {
         id: controlsMenu
         visible: shell.activeMenu !== "" && shell.activeMenu !== "network"
         screen: topBar.screen
-        anchors { top: true; left: true }
+        anchors { top: true; bottom: true; left: true; right: true }
         readonly property bool powerMenu: shell.activeMenu === "power"
         readonly property Item button: powerMenu ? brandButton :
                                shell.activeMenu === "minimized" ? minimizedButton : audioButton
         readonly property int inset: powerMenu ? 5 : 14
-        margins {
-            top: topBar.margins.top + topBar.height
-            left: Math.max(0, topBar.margins.left + barContents.x + controlsMenu.button.x +
-                           (controlsMenu.powerMenu ? 0 : controlsMenu.button.width - controlsMenu.implicitWidth))
-        }
-        implicitWidth: powerMenu ? 232 : 278
-        implicitHeight: menuContents.implicitHeight + inset * 2
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         color: "transparent"
-
-        HyprlandFocusGrab {
-            windows: [topBar, controlsMenu]
-            active: controlsMenu.visible
-            onCleared: if (shell.activeMenu !== "network") shell.activeMenu = ""
+        // The bar stays clickable. Below it, dismiss on outside clicks without
+        // depending on compositor focus changes from applications underneath.
+        mask: Region { item: controlsDismissArea }
+        MouseArea {
+            id: controlsDismissArea
+            anchors.fill: parent
+            anchors.topMargin: topBar.margins.top + topBar.height
+            acceptedButtons: Qt.AllButtons
+            onClicked: mouse => {
+                if (mouse.x < controlsCard.x || mouse.x >= controlsCard.x + controlsCard.width ||
+                    mouse.y >= controlsCard.height)
+                    shell.activeMenu = ""
+            }
         }
 
         Rectangle {
-            anchors.fill: parent
+            id: controlsCard
+            x: Math.max(0, topBar.margins.left + barContents.x + controlsMenu.button.x +
+                        (controlsMenu.powerMenu ? 0 : controlsMenu.button.width - width))
+            y: controlsDismissArea.y
+            width: controlsMenu.powerMenu ? 232 : 278
+            height: menuContents.implicitHeight + controlsMenu.inset * 2
             radius: controlsMenu.powerMenu ? 6 : 14
             color: controlsMenu.powerMenu ? "#282e37" : "#ed0b1725"
             border.width: 1
