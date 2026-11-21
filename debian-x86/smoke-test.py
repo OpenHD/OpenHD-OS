@@ -153,8 +153,8 @@ class Guest:
             "session_display=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | sed -n 's/^WAYLAND_DISPLAY=//p'); "
             "runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=\"$session_bus\" WAYLAND_DISPLAY=\"$session_display\" "
         )
-        control = "qs -p /usr/share/openhd/desktop-config/quickshell ipc"
-        self.run(session + control + " show | grep -F 'target desktop'")
+        control = "qs ipc -p /usr/share/openhd/desktop-config/quickshell"
+        self.run(session + control + " show 2>&1 | grep -iF 'target desktop'")
         self.run("pgrep -x nm-applet && pgrep -x lxpolkit && systemctl is-active NetworkManager")
 
         self.click(640, 700)  # Clicking bare desktop must leave the launcher visible.

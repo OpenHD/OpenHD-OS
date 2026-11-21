@@ -6,13 +6,13 @@ case "${1:-}" in
         if pgrep -x wvkbd-mobintl >/dev/null; then pkill -x wvkbd-mobintl; else wvkbd-mobintl & fi
         ;;
     power)
-        exec qs -p "$qs_config" ipc call desktop power
+        exec qs ipc -p "$qs_config" call desktop power
         ;;
     network)
-        exec qs -p "$qs_config" ipc call desktop network
+        exec qs ipc -p "$qs_config" call desktop network
         ;;
     flight|install)
-        exec qs -p "$qs_config" ipc call desktop "$1"
+        exec qs ipc -p "$qs_config" call desktop "$1"
         ;;
     volume-up|volume-down|volume-mute|brightness-up|brightness-down)
         action=$1
@@ -51,6 +51,6 @@ case "${1:-}" in
                 fi
                 ;;
         esac
-        qs -p "$qs_config" ipc call -- desktop hud "$title" "$level" || true
+        qs ipc -p "$qs_config" call -- desktop hud "$title" "$level" || true
         ;;
 esac

@@ -24,8 +24,8 @@ desktop() {
                 if [ -n "$pid" ]; then
                     display=$(tr "\\0" "\\n" <"/proc/$pid/environ" | sed -n "s/^WAYLAND_DISPLAY=//p")
                     if [ -n "$display" ] && runuser -u openhd -- env XDG_RUNTIME_DIR="/run/user/$1" WAYLAND_DISPLAY="$display" \
-                        qs -p /usr/share/openhd/desktop-config/quickshell ipc show 2>/dev/null |
-                        grep -q "target desktop"; then exit 0; fi
+                        qs ipc --pid "$pid" show 2>&1 |
+                        grep -qiF "target desktop"; then exit 0; fi
                 fi
                 sleep 0.25
             done

@@ -19,6 +19,6 @@ sh "$here/overlay/usr/local/sbin/openhd-grub-menu" test-root vmlinuz-test >"$men
 [[ $(grep -c '^menuentry\|^submenu' "$menu") == 4 ]]
 [[ $(grep -c '^submenu' "$menu") == 1 ]]
 grep -q "menuentry 'OpenHD' --id 'openhd'" "$menu"
-! grep -Eq 'openhd\.install|openhd\.mode=desktop|terminal_output gfxterm' "$menu"
+if grep -Eq 'openhd\.install|openhd\.mode=desktop|terminal_output gfxterm' "$menu"; then exit 1; fi
 grep -q "submenu 'Advanced options'" "$menu"
 echo 'PASS: shell, Python and GRUB menu checks'
