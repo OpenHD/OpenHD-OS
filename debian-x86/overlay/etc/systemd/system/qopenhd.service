@@ -29,8 +29,8 @@ StandardError=journal
 Environment=QSG_INFO=1
 TTYReset=yes
 TTYVHangup=yes
-SuccessExitStatus=42
-RestartPreventExitStatus=42
+SuccessExitStatus=42 43
+RestartPreventExitStatus=42 43
 Restart=always
 RestartSec=3
 

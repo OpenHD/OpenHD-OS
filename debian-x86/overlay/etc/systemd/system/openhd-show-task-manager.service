@@ -1,0 +1,7 @@
+[Unit]
+Description=Open Task Manager on the OpenHD desktop
+After=qopenhd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/openhd-switch-session task-manager

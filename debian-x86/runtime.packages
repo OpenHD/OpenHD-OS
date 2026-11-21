@@ -18,7 +18,6 @@ btrfs-progs
 dosfstools
 gdisk
 parted
-cloud-guest-utils
 rsync
 grub-pc-bin
 grub2-common

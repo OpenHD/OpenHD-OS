@@ -27,7 +27,7 @@ trap 'umount -R "$root/sys"; umount "$root/proc"; umount -R "$root/dev"' EXIT
 mkdir -p "$root/tmp/packages"
 cp "$work/builder/packages/"*.deb "$root/tmp/packages/"
 chroot "$root" apt-get update
-chroot "$root" apt-get install -y --no-install-recommends busybox zstd sudo grub-efi-amd64-signed shim-signed plymouth plymouth-themes gstreamer1.0-libav libqt5multimedia5-plugins vainfo cloud-guest-utils
+chroot "$root" apt-get install -y --no-install-recommends busybox zstd sudo grub-efi-amd64-signed shim-signed plymouth plymouth-themes gstreamer1.0-libav libqt5multimedia5-plugins vainfo
 chroot "$root" /bin/sh -c 'apt-get install -y --no-install-recommends /tmp/packages/*.deb'
 # Keep Plymouth's distro-owned config file under Debian package ownership.
 # The appliance-specific boot setting is applied after package installation.
@@ -96,14 +96,14 @@ chmod 755 "$root/etc/grub.d/09_openhd"
 chmod -x "$root/etc/grub.d/10_linux" "$root/etc/grub.d/20_linux_xen" "$root/etc/grub.d/30_uefi-firmware" 2>/dev/null || true
 # Preserve Devourer ownership and USB rules provided by SysUtils.
 chroot "$root" systemctl enable openhd-sys-utils.service openhd.service qopenhd.service \
-    openhd-grow-root.service NetworkManager.service
+    NetworkManager.service
 mkdir -p "$root/etc/openhd"
 chroot "$root" systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
 chroot "$root" systemctl set-default multi-user.target
 if ! chroot "$root" id openhd >/dev/null 2>&1; then
     chroot "$root" useradd --create-home --shell /bin/bash --groups video,render,input,plugdev openhd
 fi
-chroot "$root" passwd -l openhd
+printf '%s\n' 'openhd:openhd' | chroot "$root" chpasswd
 chroot "$root" passwd -l root
 echo openhd >"$root/etc/hostname"
 printf '127.0.0.1 localhost\n127.0.1.1 openhd\n' >"$root/etc/hosts"
@@ -121,7 +121,7 @@ ln -s /Config/openhd "$root/boot/openhd"
 ln -sfn /Config "$root/config"
 ln -sfn /Config "$root/conf"
 mkdir -p "$root/usr/local/share/OpenHD/SysUtils"
-printf '{"run_mode":"ground","firstboot":true,"debug":false}\n' >"$root/usr/local/share/OpenHD/SysUtils/config.json"
+printf '{"run_mode":"ground","firstboot":false,"debug":false}\n' >"$root/usr/local/share/OpenHD/SysUtils/config.json"
 printf 'COMPRESS=zstd\nMODULES=most\nFRAMEBUFFER=y\n' >"$root/etc/initramfs-tools/conf.d/openhd"
 grep -qx btrfs "$root/etc/initramfs-tools/modules" || echo btrfs >>"$root/etc/initramfs-tools/modules"
 install -m755 "$here/../additionalFiles/prepare-devourer-image.sh" "$root/tmp/prepare-devourer-image.sh"

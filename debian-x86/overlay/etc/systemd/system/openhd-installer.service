@@ -1,6 +1,6 @@
 [Unit]
 Description=OpenHD OS graphical setup
-After=systemd-udev-settle.service plymouth-start.service openhd-grow-root.service
+After=systemd-udev-settle.service plymouth-start.service
 RequiresMountsFor=/Config
 Wants=systemd-udev-settle.service
 ConditionKernelCommandLine=!openhd.console

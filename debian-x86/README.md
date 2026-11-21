@@ -149,14 +149,21 @@ Write the raw image to a USB drive using an image writer and boot the drive. Thi
 is already a persistent installation; unplugging it does not discard its changes.
 No internal disk is selected or modified during boot.
 
-GRUB boots directly into direct-KMS QOpenHD with no visible menu. Press the
-Windows key or tap **Desktop** in QOpenHD to start or return to the desktop.
-Click the **QOpenHD** tile or press **Super+Tab** to return to the flight view.
+GRUB boots directly into QOpenHD with no visible menu. Press **Win+Tab** to
+switch between QOpenHD and the OpenHD OS desktop. The **Desktop** button in
+QOpenHD and the **QOpenHD** desktop tile also switch views.
 Open desktop applications stay running, while the QOpenHD display frontend
 restarts to reacquire KMS. The OpenHD receiver service stays running.
 
+Use **Alt+Tab** to cycle desktop windows and **Alt+F4** to close the focused
+window. Drag the active window's title in the top bar to move it. Drag the
+diagonal arrow or a window border to resize. The top bar can also float,
+maximize, restore and close the active window. **Ctrl+Alt+Delete** opens Task Manager with the process list
+and resource graphs. Click the network icon for connections, or right-click
+it to edit profiles.
+
 Open the desktop's OpenHD logo menu and select **Install OpenHD OS**. On the
-1 GiB minimal image, the Windows key or **Install** button in QOpenHD opens the
+1 GiB minimal image, **Win+Tab** or the **Install** button in QOpenHD opens the
 same wizard directly. The unified image is capped at 2 GiB.
 No terminal commands are required. The wizard lists disk model, size and serial,
 disables disks in use, and shows the selected disk again before erasing it.
@@ -167,11 +174,12 @@ Installation works offline, copies the current OpenHD configuration and boots
 into QOpenHD from the installed drive. The desktop is included when the running
 USB image includes it.
 
-Use Ctrl+Alt+F3 for the local maintenance console. Getty is masked on both
+Use **Ctrl+Alt+F3** for the local maintenance console. Log in as `openhd`
+with password `openhd`. Getty is masked on both
 graphical terminals, and kernel and system diagnostics use tty3. Plymouth is
 configured to use the firmware display early, and VT1 is cleared before QOpenHD.
-Remote root access is not enabled. For maintenance and automated validation, the
-same guarded installation backend remains available from this console:
+Startup uses the partition layout prepared by ImageWriter or the installer.
+The guarded installation backend also supports listing available drives:
 
 ```sh
 openhd-install --list

@@ -28,7 +28,8 @@ set -e
 if [ -d /run/systemd/system ]; then systemctl daemon-reload; fi
 systemctl disable getty@tty2.service openhd-installer.service
 systemctl mask getty@tty1.service autovt@tty1.service getty@tty2.service autovt@tty2.service
-systemctl enable getty@tty3.service qopenhd.service openhd-grow-root.service
+systemctl mask ctrl-alt-del.target openhd-grow-root.service
+systemctl enable getty@tty3.service qopenhd.service
 rm -f /etc/grub.d/41_openhd_install /etc/openhd/usb-welcome
 chmod -x /etc/grub.d/10_linux /etc/grub.d/20_linux_xen /etc/grub.d/30_uefi-firmware 2>/dev/null || true
 if mountpoint -q /boot/efi; then update-grub; fi

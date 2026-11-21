@@ -88,7 +88,7 @@ echo 'OPENHD_PROGRESS 25 Copying OpenHD OS'
 rsync -aHAXx --numeric-ids --exclude=/dev/* --exclude=/proc/* --exclude=/sys/* \
     --exclude=/run/* --exclude=/tmp/* --exclude=/boot/efi/* \
     --exclude=/Config/* \
-    --exclude=/etc/openhd/root-expanded --exclude=/var/log/* / "$mountpoint/"
+    --exclude=/var/log/* / "$mountpoint/"
 mkdir -p "$mountpoint/boot/efi"
 rm -f "$mountpoint/etc/openhd/usb-welcome"
 mkdir -p "$mountpoint/Config"
@@ -109,7 +109,6 @@ chroot "$mountpoint" grub-install --target=x86_64-efi --uefi-secure-boot --efi-d
 chroot "$mountpoint" grub-install --target=i386-efi --modules='all_video gfxterm gfxmenu png font' --no-uefi-secure-boot --efi-directory=/boot/efi --removable --no-nvram
 chroot "$mountpoint" grub-install --target=i386-pc --modules='all_video gfxterm gfxmenu png font' "$target"
 chroot "$mountpoint" update-grub
-touch "$mountpoint/etc/openhd/root-expanded"
 echo 'OPENHD_PROGRESS 95 Finishing disk writes'
 sync
 echo 'OPENHD_PROGRESS 100 Installation complete'

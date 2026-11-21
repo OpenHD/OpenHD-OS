@@ -3,8 +3,11 @@
 set -eu
 case "${1:-}" in
     flight)
-        if [ "${EXIT_CODE:-}" = exited ] && [ "${EXIT_STATUS:-}" = 42 ]; then
-            systemctl --no-block start openhd-switch-desktop.service
+        if [ "${EXIT_CODE:-}" = exited ]; then
+            case "${EXIT_STATUS:-}" in
+                42) systemctl --no-block start openhd-switch-desktop.service ;;
+                43) systemctl --no-block start openhd-show-task-manager.service ;;
+            esac
         fi
         ;;
     installer)

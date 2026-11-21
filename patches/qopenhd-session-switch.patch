@@ -10,7 +10,7 @@ index 7e3983c..cc0bec9 100644
  #include <QTimer>
  #include <QProcess>
  #include <QQmlApplicationEngine>
-@@ -365,6 +366,26 @@ static void android_check_permissions(){
+@@ -365,6 +366,36 @@ static void android_check_permissions(){
  }*/
  
  
@@ -23,21 +23,31 @@ index 7e3983c..cc0bec9 100644
 +        if (event->type() != QEvent::KeyPress && event->type() != QEvent::KeyRelease)
 +            return false;
 +        const auto *key = static_cast<QKeyEvent *>(event);
-+        if (key->key() != Qt::Key_Meta && key->key() != Qt::Key_Super_L && key->key() != Qt::Key_Super_R)
++        const bool pressed = event->type() == QEvent::KeyPress;
++        if (key->key() == Qt::Key_Meta || key->key() == Qt::Key_Super_L || key->key() == Qt::Key_Super_R) {
++            metaHeld = pressed;
 +            return false;
-+        if (event->type() == QEvent::KeyRelease && !key->isAutoRepeat())
-+            QMetaObject::invokeMethod(window, "switchOpenHDSession");
++        }
++        const auto modifiers = key->modifiers();
++        const bool switchView = key->key() == Qt::Key_Tab && (metaHeld || modifiers.testFlag(Qt::MetaModifier));
++        const bool taskManager = key->key() == Qt::Key_Delete && modifiers.testFlag(Qt::ControlModifier)
++                               && modifiers.testFlag(Qt::AltModifier);
++        if (!switchView && !taskManager)
++            return false;
++        if (pressed && !key->isAutoRepeat())
++            QMetaObject::invokeMethod(window, taskManager ? "openOpenHDTaskManager" : "switchOpenHDSession");
 +        return true;
 +    }
 +
 +private:
 +    QObject *window;
++    bool metaHeld = false;
 +};
 +
  int main(int argc, char *argv[]) {
  
  #if defined(__linux__) && !defined(__android__)
-@@ -489,6 +510,10 @@ int main(int argc, char *argv[]) {
+@@ -489,6 +520,10 @@ int main(int argc, char *argv[]) {
      QApplication app(argc, argv);
      QQmlApplicationEngine engine;
      engine.rootContext()->setContextProperty("QOPENHD_X86_KMS", x86Kms);
@@ -48,7 +58,7 @@ index 7e3983c..cc0bec9 100644
  #ifdef QOPENHD_ENABLE_NXP_VIDEO
      // The permanent startup window selects native Hantro movie playback before
      // the other models and platform context properties have been initialized.
-@@ -501,6 +526,11 @@ int main(int argc, char *argv[]) {
+@@ -501,6 +536,11 @@ int main(int argc, char *argv[]) {
          if (engine.rootObjects().isEmpty()) return 1;
          auto window = qobject_cast<QQuickWindow*>(engine.rootObjects().first());
          if (!window) return 1;
@@ -82,13 +92,13 @@ index 5049189..ccf5fcd 100644
 +    property bool leaving: false
 +    onHudPresentedChanged: {
 +        if (!hudPresented || !sessionSwitchEnabled) return
-+        console.info("OpenHD flight view ready")
++        console.warn("OpenHD flight view ready")
 +        if (returning && !leaving) revealTransition.start()
 +    }
      property bool hudPresented: false
      property int heldFrameCount: 0
      property int preparedHudFrameCount: 0
-@@ -36,7 +45,74 @@ Window {
+@@ -36,7 +45,83 @@ Window {
          }
      }
      function loadFlightUi() {
@@ -101,9 +111,17 @@ index 5049189..ccf5fcd 100644
 +        }
 +    }
 +    function switchOpenHDSession() {
++        leaveFor(42)
++    }
++    function openOpenHDTaskManager() {
++        if (sessionSwitchEnabled && QOPENHD_SESSION_LABEL === "Desktop")
++            leaveFor(43)
++    }
++    function leaveFor(exitCode) {
 +        if (!sessionSwitchEnabled || !hudPresented || leaving)
 +            return
 +        leaving = true
++        switchDelay.exitCode = exitCode
 +        revealTransition.stop()
 +        coverTransition.start()
 +    }
@@ -159,8 +177,9 @@ index 5049189..ccf5fcd 100644
 +    }
 +    Timer {
 +        id: switchDelay
++        property int exitCode: 42
 +        interval: 45
-+        onTriggered: Qt.exit(42)
++        onTriggered: Qt.exit(exitCode)
      }
      Loader {
          id: flightContent

@@ -155,7 +155,7 @@ class Guest:
         )
         control = "qs ipc -p /usr/share/openhd/desktop-config/quickshell"
         self.run(session + control + " show 2>&1 | grep -iF 'target desktop'")
-        self.run("pgrep -x nm-applet && pgrep -x lxpolkit && systemctl is-active NetworkManager")
+        self.run("pgrep -x nm-tray && pgrep -x lxpolkit && command -v nm-connection-editor && systemctl is-active NetworkManager")
 
         self.click(640, 700)  # Clicking bare desktop must leave the launcher visible.
         self.screenshot("desktop-launcher-persistent")
@@ -179,8 +179,11 @@ class Guest:
             f"/usr/local/sbin/openhd-shell-action {action}"
         )
 
-    def windows_key(self):
-        self.qmp_command("send-key", {"keys": [{"type": "qcode", "data": "meta_l"}], "hold-time": 120})
+    def send_shortcut(self, *keys):
+        self.qmp_command("send-key", {"keys": [{"type": "qcode", "data": key} for key in keys], "hold-time": 120})
+
+    def view_shortcut(self):
+        self.send_shortcut("meta_l", "tab")
 
     def wait_view(self, view, vt):
         self.run(
@@ -190,7 +193,7 @@ class Guest:
         )
 
     def open_installer(self, desktop):
-        self.windows_key()
+        self.view_shortcut()
         if desktop:
             self.wait_view("desktop", 2)
             self.desktop_ui()
@@ -291,7 +294,7 @@ def main():
         guest.run("test $(findmnt -n -o FSTYPE /) = btrfs && findmnt / && df -h /")
         guest.run("test $(systemctl is-enabled getty@tty1.service) = masked && test $(systemctl is-enabled autovt@tty1.service) = masked && ! systemctl is-active --quiet getty@tty1.service && systemctl is-active --quiet getty@tty3.service")
         guest.run("adb version")
-        guest.run("test -f /etc/openhd/root-expanded && test $(blockdev --getsize64 /dev/vda4) -gt 1800000000")
+        guest.run("test $(systemctl is-enabled openhd-grow-root.service) = masked && passwd -S openhd | grep -q '^openhd P '")
         guest.run("test $(findmnt -n -o FSTYPE /Config) = vfat && test $(findmnt -n -o SOURCE /Config) = /dev/vda1 && test -f /Config/config.txt && test $(readlink /boot/openhd) = /Config/openhd")
         guest.run("printf '{\"role\":\"ground\",\"debug\":true}\\n' > /Config/openhd/settings.json; echo imagewriter-config-persistent > /Config/imagewriter-test.txt")
         guest.run("printf '[General]\\nimagewriter_import_test=true\\n' > /Config/openhd/QOpenHD.conf")
@@ -338,21 +341,24 @@ def main():
         guest.run("test ! -e /etc/openhd/usb-welcome")
         print("PASS: installed disk boots through x64 UEFI with the USB absent", flush=True)
         if desktop:
-            guest.windows_key()
+            guest.view_shortcut()
             guest.wait_view("desktop", 2)
             guest.desktop_ui()
             guest.desktop_controls()
             guest.run("pgrep -x Hyprland >/run/desktop-before-switch; systemctl is-active openhd openhd-sys-utils")
-            guest.desktop_action("flight")
+            guest.send_shortcut("ctrl", "alt", "delete")
+            guest.run("timeout 15 sh -c 'until pgrep -fu openhd \"(^|/)gnome-system-monitor([[:space:]]|$)\"; do sleep 0.25; done'")
+            guest.screenshot("task-manager")
+            guest.view_shortcut()
             guest.wait_view("flight", 1)
             guest.run("timeout 40 sh -c 'until [ \"$(journalctl -b -u qopenhd --no-pager | grep -Fc \"OpenHD flight view ready\")\" -ge 2 ]; do sleep 1; done'", timeout=45)
             guest.screenshot("flight-after-desktop")
-            guest.windows_key()
+            guest.view_shortcut()
             guest.wait_view("desktop", 2)
             guest.run("pgrep -x Hyprland | cmp - /run/desktop-before-switch; systemctl is-active openhd openhd-sys-utils")
             guest.screenshot("desktop-after-flight")
             guest.shutdown(allow_forced_exit=True)
-            print("PASS: Windows key switches both ways without restarting Hyprland", flush=True)
+            print("PASS: Win+Tab switches both ways without restarting Hyprland", flush=True)
         else:
             guest.shutdown()
     except Exception:

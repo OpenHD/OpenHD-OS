@@ -20,7 +20,30 @@ ShellRoot {
     property string switchTarget: ""
     property bool leftDesktop: false
     readonly property var audio: Pipewire.defaultAudioSink?.audio ?? null
-    readonly property var networkItem: SystemTray.items.values.find(item => /^nm[-_]applet$/.test(item.id)) ?? null
+    readonly property var networkItem: SystemTray.items.values.find(item =>
+        /nm[-_ ]?tray|networkmanager/i.test(item.id + " " + item.title)
+    ) ?? null
+
+    function windowAction(dispatcher) {
+        Hyprland.dispatch(dispatcher)
+    }
+
+    component WindowDrag: DragHandler {
+        required property string action
+        property point previous: Qt.point(0, 0)
+        target: null
+        onActiveChanged: previous = Qt.point(0, 0)
+        onActiveTranslationChanged: {
+            if (!active)
+                return
+            const x = Math.round(activeTranslation.x - previous.x)
+            const y = Math.round(activeTranslation.y - previous.y)
+            if (x === 0 && y === 0)
+                return
+            previous = Qt.point(previous.x + x, previous.y + y)
+            shell.windowAction("hl.dsp.window." + action + "({ x = " + x + ", y = " + y + ", relative = true })")
+        }
+    }
 
     function toggleMenu(name) {
         activeMenu = activeMenu === name ? "" : name
@@ -30,6 +53,8 @@ ShellRoot {
         activeMenu = ""
         if (networkItem?.hasMenu)
             networkMenu.open()
+        else if (networkItem)
+            networkItem.activate()
         else
             Quickshell.execDetached(["nm-connection-editor"])
     }
@@ -109,6 +134,7 @@ ShellRoot {
         function network(): void { shell.openNetwork() }
         function flight(): void { shell.switchSession("flight") }
         function install(): void { shell.switchSession("install") }
+        function taskManager(): void { Quickshell.execDetached(["gnome-system-monitor"]) }
         function hud(title: string, level: int): void {
             shell.showHud(title, level)
         }
@@ -153,7 +179,8 @@ ShellRoot {
         margins { top: 8; left: 12; right: 12 }
         implicitHeight: 48
         color: "transparent"
-        exclusiveZone: 0
+        exclusionMode: ExclusionMode.Auto
+        WlrLayershell.layer: WlrLayer.Top
         Rectangle {
             anchors.fill: parent
             radius: 13
@@ -194,12 +221,55 @@ ShellRoot {
                     }
                 }
                 Item { Layout.fillWidth: true }
+                Text {
+                    visible: Hyprland.activeToplevel !== null
+                    text: Hyprland.activeToplevel?.title || "Window"
+                    Layout.maximumWidth: Math.max(0, topBar.width / 4)
+                    elide: Text.ElideRight
+                    color: "#b6c7d8"
+                    WindowDrag { action: "move"; cursorShape: Qt.SizeAllCursor }
+                    HoverHandler { id: titleHover; cursorShape: Qt.SizeAllCursor }
+                    ToolTip.visible: titleHover.hovered
+                    ToolTip.text: "Drag to move window"
+                }
+                Label {
+                    visible: !!Hyprland.activeToplevel
+                    text: "↘"
+                    Layout.preferredWidth: 26
+                    horizontalAlignment: Text.AlignHCenter
+                    Accessible.name: "Drag to resize window"
+                    WindowDrag { action: "resize"; cursorShape: Qt.SizeFDiagCursor }
+                    HoverHandler { id: resizeHover; cursorShape: Qt.SizeFDiagCursor }
+                    ToolTip.visible: resizeHover.hovered
+                    ToolTip.text: "Drag to resize window"
+                }
+                Repeater {
+                    model: [
+                        { icon: "⇱", name: "Toggle floating. Win + drag to move, or drag a window edge to resize.", action: 'hl.dsp.window.float({ action = "toggle" })' },
+                        { icon: "□", name: "Maximize or restore window", action: 'hl.dsp.window.fullscreen({ mode = "maximized" })' },
+                        { icon: "×", name: "Close window (Alt+F4)", action: "hl.dsp.window.close()" }
+                    ]
+                    delegate: Button {
+                        required property var modelData
+                        visible: !!Hyprland.activeToplevel
+                        Layout.preferredWidth: 30
+                        text: modelData.icon
+                        Accessible.name: modelData.name
+                        ToolTip.visible: hovered
+                        ToolTip.text: modelData.name
+                        onClicked: shell.windowAction(modelData.action)
+                    }
+                }
                 Button {
                     id: networkButton
                     Layout.preferredWidth: 42
                     Layout.fillHeight: true
                     Accessible.name: "Network " + shell.networkState
                     onClicked: shell.openNetwork()
+                    TapHandler {
+                        acceptedButtons: Qt.RightButton
+                        onTapped: Quickshell.execDetached(["nm-connection-editor"])
+                    }
                     background: Rectangle { radius: 8; color: networkButton.hovered ? "#294057" : "transparent" }
                     contentItem: Text {
                         visible: !networkIcon.visible
@@ -427,6 +497,15 @@ ShellRoot {
                     Layout.fillWidth: true
                     text: "Install OpenHD OS"
                     onClicked: shell.switchSession("install")
+                }
+                Button {
+                    visible: shell.activeMenu === "power"
+                    Layout.fillWidth: true
+                    text: "Task Manager"
+                    onClicked: {
+                        shell.activeMenu = ""
+                        Quickshell.execDetached(["gnome-system-monitor"])
+                    }
                 }
                 Button {
                     visible: shell.activeMenu === "power"

@@ -33,9 +33,33 @@ desktop() {
 }
 
 flight() {
-    chvt 1
-    systemctl start qopenhd.service
-    set_view flight
+    desktop_session=$(loginctl show-seat seat0 -p ActiveSession --value 2>/dev/null || true)
+    set_view switching
+    chvt 1 || return 1
+    # Let the logind-backed compositor finish releasing its seat and KMS.
+    if [ -n "$desktop_session" ] &&
+        [ "$(loginctl show-session "$desktop_session" -p VTNr --value)" = 2 ]; then
+        timeout 5 sh -c '
+            while [ "$(loginctl show-session "$1" -p Active --value)" = yes ]; do
+                sleep 0.1
+            done
+        ' sh "$desktop_session" || return 1
+    fi
+    # A failed DRM acquisition exits Qt; systemd retries while VT1 owns the seat.
+    # shellcheck disable=SC2016
+    systemctl start qopenhd.service &&
+        timeout 12 sh -c '
+            while :; do
+                invocation=$(systemctl show qopenhd.service -p InvocationID --value)
+                if [ -n "$invocation" ] &&
+                    systemctl is-active --quiet qopenhd.service &&
+                    journalctl -b --no-pager -o cat "_SYSTEMD_INVOCATION_ID=$invocation" |
+                    grep -Fq "OpenHD flight view ready"; then
+                    exit 0
+                fi
+                sleep 0.25
+            done
+        ' && set_view flight
 }
 
 installer() {
@@ -49,12 +73,19 @@ installer() {
 }
 
 case "${1:-}" in
-    desktop)
+    desktop|task-manager)
         if [ -x /usr/bin/Hyprland ]; then
             if ! desktop; then
                 systemctl stop openhd-desktop.service
                 flight
                 exit 1
+            fi
+            if [ "$1" = task-manager ]; then
+                uid=$(id -u openhd)
+                pid=$(pgrep -nx -u "$uid" qs)
+                display=$(tr '\0' '\n' <"/proc/$pid/environ" | sed -n 's/^WAYLAND_DISPLAY=//p')
+                runuser -u openhd -- env XDG_RUNTIME_DIR="/run/user/$uid" WAYLAND_DISPLAY="$display" \
+                    qs ipc --pid "$pid" call desktop taskManager
             fi
         else
             installer flight
@@ -62,7 +93,12 @@ case "${1:-}" in
         ;;
     flight)
         [ ! -e "$state/installer-return" ] || exit 1
-        flight
+        [ "$(cat "$state/current" 2>/dev/null)" = desktop ] || exit 1
+        if ! flight; then
+            systemctl stop qopenhd.service
+            desktop
+            exit 1
+        fi
         ;;
     install)
         [ ! -e "$state/installer-return" ] || exit 1
