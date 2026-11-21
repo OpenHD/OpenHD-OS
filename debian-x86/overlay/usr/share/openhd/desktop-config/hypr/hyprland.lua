@@ -82,6 +82,9 @@ end
 hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.window_rule({ match = { class = ".*" }, float = true, center = true })
+-- ArduDeck requests 1280×800, which can place its floating frame under the
+-- panel on smaller screens. Tile the main window within the usable area.
+hl.window_rule({ match = { class = "ardudeck-desktop", title = "ArduDeck" }, tile = true })
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action volume-up"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action volume-down"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action volume-mute"), { locked = true })
