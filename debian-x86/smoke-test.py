@@ -119,22 +119,29 @@ class Guest:
         self.run("systemctl is-active qopenhd openhd openhd-sys-utils NetworkManager")
         self.run("test $(systemctl show qopenhd -p NRestarts --value) = 0")
 
-    def shutdown(self, *, allow_forced_exit=False):
-        self.serial.sendall(b"sync; systemctl poweroff\n")
+    def shutdown(self):
+        self.run("sync")
+        self.serial.sendall(b"systemctl --no-block poweroff\n")
         # Drain the serial console while waiting. Backpressure can otherwise
         # stall the guest's shutdown logging and look like a service hang.
-        deadline = time.monotonic() + 45
+        deadline = time.monotonic() + 120
+        shutdown_log = bytearray()
         while self.process.poll() is None and time.monotonic() < deadline:
             try:
                 chunk = self.serial.recv(65536)
-                if chunk:
-                    self.transcript.write(chunk)
+                if not chunk:
+                    break
+                self.transcript.write(chunk)
+                shutdown_log.extend(chunk)
             except socket.timeout:
                 pass
-        if self.process.poll() is None and allow_forced_exit:
-            print("WARNING: desktop VM did not exit after poweroff; stopping QEMU", flush=True)
-            self.process.terminate()
-        self.process.wait(timeout=5)
+        try:
+            self.process.wait(timeout=max(1, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired as error:
+            raise RuntimeError("Guest did not shut down within 120 seconds:\n" +
+                               shutdown_log[-4000:].decode(errors="replace")) from error
+        if self.process.returncode != 0:
+            raise RuntimeError(f"QEMU exited with status {self.process.returncode} during shutdown")
         self.serial.close()
         self.qmp_file.close()
         self.qmp.close()
@@ -267,7 +274,11 @@ class Guest:
         self.click(640, 685)
         self.installer_page(3)
         self.screenshot("installer-progress")
-        self.run("timeout 600 sh -c 'until journalctl -b -u openhd-installer --no-pager | grep -q \"OpenHD installer page: 4\"; do sleep 1; done'", timeout=610)
+        self.run(
+            "timeout 600 sh -c 'until journalctl -b -u openhd-installer --no-pager | "
+            "grep -q \"OpenHD installer page: 4\"; do systemctl is-active --quiet openhd-installer || exit 1; "
+            "sleep 1; done'", timeout=610,
+        )
         time.sleep(1)
         self.screenshot("installer-complete")
         self.run("test $(blkid -s TYPE -o value /dev/vdb4) = btrfs && test $(blkid -s TYPE -o value /dev/vdb1) = vfat")
@@ -382,7 +393,7 @@ def main():
             guest.wait_view("desktop", 2)
             guest.run("pgrep -x Hyprland | cmp - /run/desktop-before-switch; systemctl is-active openhd openhd-sys-utils")
             guest.screenshot("desktop-after-flight")
-            guest.shutdown(allow_forced_exit=True)
+            guest.shutdown()
             print("PASS: Win+Tab switches both ways without restarting Hyprland", flush=True)
         else:
             guest.shutdown()

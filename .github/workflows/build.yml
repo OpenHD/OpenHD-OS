@@ -87,5 +87,6 @@ jobs:
           name: desktop-preview
           path: |
             /opt/openhd-os-work/output/vm-test/*.png
+            /opt/openhd-os-work/output/vm-test/*.log
             /opt/openhd-os-work/output/vm-test/failure-diagnostics.txt
           retention-days: 7

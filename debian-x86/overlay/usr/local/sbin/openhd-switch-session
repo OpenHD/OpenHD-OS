@@ -67,7 +67,7 @@ flight() {
 installer() {
     printf '%s\n' "$1" >"$state/installer-return"
     set_view installer
-    if ! chvt 1 || ! systemctl start openhd-installer.service; then
+    if ! systemctl stop qopenhd.service || ! chvt 1 || ! systemctl start openhd-installer.service; then
         rm -f "$state/installer-return"
         if [ "$1" = desktop ]; then desktop; else flight; fi
         return 1

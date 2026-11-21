@@ -4,7 +4,7 @@ After=systemd-udev-settle.service plymouth-start.service
 RequiresMountsFor=/Config
 Wants=systemd-udev-settle.service
 ConditionKernelCommandLine=!openhd.console
-Conflicts=getty@tty1.service autovt@tty1.service qopenhd.service
+Conflicts=getty@tty1.service autovt@tty1.service
 
 [Service]
 Type=exec

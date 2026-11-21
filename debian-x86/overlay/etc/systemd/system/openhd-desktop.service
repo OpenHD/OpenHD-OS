@@ -1,7 +1,7 @@
 [Unit]
 Description=OpenHD desktop session
 After=systemd-user-sessions.service
-ConditionPathIsExecutable=/usr/bin/Hyprland
+ConditionFileIsExecutable=/usr/bin/Hyprland
 Conflicts=getty@tty2.service autovt@tty2.service
 
 [Service]
