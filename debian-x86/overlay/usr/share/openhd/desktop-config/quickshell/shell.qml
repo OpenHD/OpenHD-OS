@@ -691,17 +691,25 @@ ShellRoot {
         }
     }
 
-    PopupWindow {
+    PanelWindow {
         id: controlsMenu
         visible: shell.activeMenu !== "" && shell.activeMenu !== "network"
-        anchor.item: shell.activeMenu === "power" ? brandButton :
-                     shell.activeMenu === "minimized" ? minimizedButton : audioButton
-        anchor.edges: shell.activeMenu === "power" ? Edges.Bottom | Edges.Left : Edges.Bottom | Edges.Right
-        anchor.gravity: shell.activeMenu === "power" ? Edges.Bottom | Edges.Right : Edges.Bottom | Edges.Left
+        screen: topBar.screen
+        anchors { top: true; left: true }
         readonly property bool powerMenu: shell.activeMenu === "power"
+        readonly property Item button: powerMenu ? brandButton :
+                               shell.activeMenu === "minimized" ? minimizedButton : audioButton
         readonly property int inset: powerMenu ? 5 : 14
+        margins {
+            top: topBar.margins.top + topBar.height
+            left: Math.max(0, topBar.margins.left + barContents.x + controlsMenu.button.x +
+                           (controlsMenu.powerMenu ? 0 : controlsMenu.button.width - controlsMenu.implicitWidth))
+        }
         implicitWidth: powerMenu ? 232 : 278
         implicitHeight: menuContents.implicitHeight + inset * 2
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
         color: "transparent"
 
         HyprlandFocusGrab {
@@ -801,7 +809,7 @@ ShellRoot {
         function run(action) {
             shell.activeMenu = ""
             if (!running) {
-                command = ["systemctl", action]
+                command = ["sudo", "-n", "/usr/bin/systemctl", "--no-block", action]
                 running = true
             }
         }

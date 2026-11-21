@@ -10,6 +10,12 @@ ca-certificates
 systemd-sysv
 kbd
 dbus
+dbus-user-session
+pipewire
+pipewire-pulse
+wireplumber
+alsa-ucm-conf
+firmware-sof-signed
 linux-image-amd64
 initramfs-tools
 busybox

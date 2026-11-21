@@ -45,6 +45,8 @@ class Guest:
         args = ["qemu-system-x86_64", "-accel", "kvm", "-cpu", "host", "-smp", "2",
                 "-m", "2048", "-machine", "q35,smm=on", "-display", "none",
                 "-device", "virtio-vga", "-device", "qemu-xhci", "-device", "usb-tablet", "-no-reboot",
+                "-audiodev", "none,id=test-audio", "-device", "ich9-intel-hda",
+                "-device", "hda-duplex,audiodev=test-audio",
                 "-qmp", "unix:/output/vm-test/qmp.sock,server=on,wait=off",
                 "-serial", "unix:/output/vm-test/serial.sock,server=on,wait=off",
                 "-nic", "user,model=virtio-net-pci"]
@@ -169,7 +171,10 @@ class Guest:
         self.screenshot("desktop-launcher-persistent")
         self.click(67, 32)
         self.screenshot("desktop-power-menu")
-        self.click(640, 700)
+        self.click(140, 113)
+        self.run("timeout 15 sh -c 'until pgrep -fu openhd ^/usr/bin/gnome-system-monitor; do sleep 0.25; done'")
+        self.run("pkill -fu openhd ^/usr/bin/gnome-system-monitor")
+        self.run("timeout 15 sh -c 'while pgrep -fu openhd ^/usr/bin/gnome-system-monitor; do sleep 0.25; done'")
         self.click(1150, 32)
         self.screenshot("desktop-sound-menu")
         self.click(640, 700)
@@ -179,13 +184,6 @@ class Guest:
         # Check the visible feedback without depending on VM backlight support.
         self.run(session + control + " call desktop hud Brightness 65")
         self.screenshot("desktop-brightness-hud")
-
-    def desktop_action(self, action):
-        self.run(
-            "display=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | sed -n 's/^WAYLAND_DISPLAY=//p'); "
-            "runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=\"$display\" "
-            f"/usr/local/sbin/openhd-shell-action {action}"
-        )
 
     def send_shortcut(self, *keys):
         self.qmp_command("send-key", {"keys": [{"type": "qcode", "data": key} for key in keys], "hold-time": 120})
@@ -227,7 +225,8 @@ class Guest:
             self.run("timeout 35 sh -c " + shlex.quote("until " + hyprctl + "clients | grep -q '^Window '; do sleep 0.25; done"))
             self.screenshot("kite-gc-from-launcher")
             self.send_shortcut("alt", "f4")
-            self.desktop_action("install")
+            self.click(67, 32)
+            self.click(140, 78)
         self.wait_view("installer", 1)
         self.installer_page(1)
 
@@ -324,6 +323,7 @@ def main():
         guest.ready()
         guest.screenshot("early-boot")
         guest.flight_ui()
+        guest.run("test -S /run/user/$(id -u openhd)/pulse/native && ss -lunp | grep -E ':5610[[:space:]].*QOpenHD'")
         guest.run("grep -q '^set timeout=0$' /boot/grub/grub.cfg && grep -q \"menuentry 'OpenHD'\" /boot/grub/grub.cfg && ! grep -q 'openhd.install' /boot/grub/grub.cfg")
         guest.run("test $(findmnt -n -o FSTYPE /) = btrfs && findmnt / && df -h /")
         guest.run("test $(systemctl is-enabled getty@tty1.service) = masked && test $(systemctl is-enabled autovt@tty1.service) = masked && ! systemctl is-active --quiet getty@tty1.service && systemctl is-active --quiet getty@tty3.service")

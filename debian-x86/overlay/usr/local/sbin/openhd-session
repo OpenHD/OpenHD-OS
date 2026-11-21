@@ -13,6 +13,17 @@ if [ -x /usr/bin/Hyprland ]; then
 else
     export QOPENHD_SESSION_LABEL=Install
 fi
+# QOpenHD owns DRM as root on VT1. Its PulseAudio clients use the same local
+# PipeWire server and output selection as the unprivileged desktop session.
+if audio_uid=$(id -u openhd 2>/dev/null); then
+    pulse_socket="/run/user/$audio_uid/pulse/native"
+    # The socket is created asynchronously when logind starts the user manager.
+    # shellcheck disable=SC2016
+    timeout 2 sh -c 'until [ -S "$1" ]; do sleep 0.1; done' sh "$pulse_socket" || true
+    if [ -S "$pulse_socket" ]; then
+        export PULSE_SERVER="unix:$pulse_socket"
+    fi
+fi
 # VT1 is reserved for the appliance. Clear any cells left by firmware or a
 # failed splash without changing the KMS overlay's transparent background.
 printf '\033[0m\033[2J\033[3J\033[H\033[?25l' >/dev/tty1

@@ -27,7 +27,8 @@ trap 'umount -R "$root/sys"; umount "$root/proc"; umount -R "$root/dev"' EXIT
 mkdir -p "$root/tmp/packages"
 cp "$work/builder/packages/"*.deb "$root/tmp/packages/"
 chroot "$root" apt-get update
-chroot "$root" apt-get install -y --no-install-recommends busybox zstd sudo grub-efi-amd64-signed shim-signed plymouth plymouth-themes gstreamer1.0-libav libqt5multimedia5-plugins vainfo
+chroot "$root" apt-get install -y --no-install-recommends busybox zstd sudo grub-efi-amd64-signed shim-signed plymouth plymouth-themes gstreamer1.0-libav libqt5multimedia5-plugins vainfo \
+    dbus-user-session pipewire pipewire-pulse wireplumber alsa-ucm-conf firmware-sof-signed
 chroot "$root" /bin/sh -c 'apt-get install -y --no-install-recommends /tmp/packages/*.deb'
 # Keep Plymouth's distro-owned config file under Debian package ownership.
 # The appliance-specific boot setting is applied after package installation.
@@ -106,6 +107,10 @@ chroot "$root" systemctl set-default multi-user.target
 if ! chroot "$root" id openhd >/dev/null 2>&1; then
     chroot "$root" useradd --create-home --shell /bin/bash --groups video,render,input,plugdev openhd
 fi
+chroot "$root" usermod -a -G audio openhd
+chroot "$root" systemctl --global enable pipewire.socket pipewire-pulse.socket wireplumber.service
+# Start the shared audio session before the first graphical login.
+install -Dm644 /dev/null "$root/var/lib/systemd/linger/openhd"
 printf '%s\n' 'openhd:openhd' | chroot "$root" chpasswd
 chroot "$root" passwd -l root
 echo openhd >"$root/etc/hostname"
