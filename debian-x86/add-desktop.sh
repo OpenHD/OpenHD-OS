@@ -20,6 +20,12 @@ chroot "$work/root" apt-get -t trixie-backports install -y --no-install-recommen
     dbus-x11 qt6-wayland qtwayland5 wvkbd nm-tray nm-connection-editor gnome-system-monitor lxpolkit arc-theme papirus-icon-theme \
     fonts-inter fonts-font-awesome libnotify-bin brightnessctl brightness-udev \
     pipewire pipewire-pulse wireplumber alsa-ucm-conf firmware-sof-signed pavucontrol xdg-desktop-portal-gtk
+for binary in hyprland-dialog start-hyprland; do
+    if [[ ! -x "$work/root/usr/bin/$binary" ]]; then
+        printf 'Desktop dependency missing: /usr/bin/%s\n' "$binary" >&2
+        exit 1
+    fi
+done
 bash "$here/build-window-titlebars.sh" "$work"
 chroot "$work/root" apt-get purge -y xfce4-session xfce4-panel xfwm4 xfdesktop4 \
     xfce4-settings xinit xterm xserver-xorg-core xserver-xorg-input-libinput

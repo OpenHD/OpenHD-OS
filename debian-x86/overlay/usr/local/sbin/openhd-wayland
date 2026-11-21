@@ -1,5 +1,8 @@
 #!/bin/sh
 set -eu
+# greetd skips login profiles for this session. Export PATH so Hyprland's
+# own executable checks and GUI helpers can find the Debian binaries.
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 unset QT_QPA_EGLFS_INTEGRATION QT_QPA_EGLFS_KMS_ATOMIC QT_QPA_EGLFS_KMS_CONFIG
 unset QOPENHD_X86_KMS QOPENHD_BOOT_ANIMATION
 export XDG_CURRENT_DESKTOP=Hyprland
@@ -12,4 +15,4 @@ export QT_QUICK_CONTROLS_MATERIAL_THEME=Dark
 export QT_QUICK_CONTROLS_MATERIAL_ACCENT='#73d7ee'
 export XCURSOR_THEME=Adwaita
 export XCURSOR_SIZE=24
-exec dbus-run-session -- Hyprland --config /usr/share/openhd/desktop-config/hypr/hyprland.lua
+exec dbus-run-session -- /usr/bin/start-hyprland -- --config /usr/share/openhd/desktop-config/hypr/hyprland.lua
