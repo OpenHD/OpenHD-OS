@@ -343,6 +343,9 @@ def main():
         desktop = "DESKTOP_AVAILABLE" in guest.run("test ! -x /usr/bin/Hyprland || echo DESKTOP_AVAILABLE")
         guest.open_installer(desktop)
         guest.screenshot("installer-from-session")
+        # SysUtils can request a QOpenHD start while the wizard owns VT1.
+        guest.run("systemctl start qopenhd && systemctl is-active --quiet openhd-installer "
+                  "&& ! systemctl is-active --quiet qopenhd")
         guest.run("openhd-install --target /dev/vda --dry-run", expected=1)
         guest.run("openhd-install --target /dev/vdb --dry-run")
         guest.gui_install()

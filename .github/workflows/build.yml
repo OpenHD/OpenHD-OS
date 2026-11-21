@@ -1,5 +1,19 @@
 name: Build Debian image or component packages
 on:
+  workflow_call:
+    inputs:
+      output:
+        type: string
+        default: desktop-image
+      openhd_ref:
+        type: string
+        default: openhd-3.0
+      qopenhd_ref:
+        type: string
+        default: dev-release
+      sysutils_ref:
+        type: string
+        default: dev-release
   workflow_dispatch:
     inputs:
       output:

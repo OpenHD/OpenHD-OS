@@ -6,12 +6,11 @@ Wants=systemd-udev-settle.service
 Conflicts=getty@tty1.service autovt@tty1.service
 StartLimitIntervalSec=0
 ConditionKernelCommandLine=!openhd.console
+# Check before systemd opens or hangs up the TTY shared with the installer.
+ConditionPathExists=!/run/openhd-view/qopenhd-inhibited
 
 [Service]
 Type=simple
-# SysUtils may request a start when it is restored after copying the disk.
-# Only the session switcher may release the installer or desktop display.
-ExecCondition=/bin/sh -c '! grep -Eq "^(installer|desktop)$" /run/openhd-view/current 2>/dev/null'
 ExecStart=/usr/local/sbin/openhd-session
 ExecStopPost=/usr/local/sbin/openhd-session-exited flight
 Environment=QT_QPA_PLATFORM=eglfs
