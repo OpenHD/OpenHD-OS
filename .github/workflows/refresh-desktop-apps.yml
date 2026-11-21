@@ -26,5 +26,5 @@ jobs:
             git add debian-x86/desktop-apps.lock.json
             git commit -m 'Track latest stable flight desktop applications'
             git push
-            gh workflow run build.yml --ref main -f output=synced-images
+            gh workflow run build.yml --ref main
           fi

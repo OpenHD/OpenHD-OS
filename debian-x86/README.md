@@ -1,10 +1,10 @@
-# OpenHD Debian x86 minimal
+# OpenHD OS for x86
 
 This builds a normal writable Debian 13 (trixie) installation for an amd64 PC.
 It boots directly into the production QOpenHD interface and runs the OpenHD ground
-receiver and SysUtils. The optional desktop adds a Hyprland and Quickshell OpenHD
-desktop while retaining minimal mode. There is no live system, compressed read-only root,
-or RAM overlay. Btrfs compresses ordinary files on the writable root filesystem.
+receiver and SysUtils. The same installation includes the Hyprland and Quickshell
+desktop and its flight apps. Btrfs compresses ordinary files on the writable root
+filesystem.
 
 The distribution is presented as **OpenHD OS**: its own boot menu, console identity,
 OpenHD Plymouth theme, and the existing QOpenHD boot-animation video. The animation
@@ -12,10 +12,10 @@ plays once before the flight HUD loads. Machine-readable `ID=debian` and the rea
 Debian codename/version remain available to package installers. Standard Debian
 repositories, `.deb` packages and `apt` are retained.
 
-The minimal image budget is **1 GiB (1,073,741,824 bytes)**; the desktop image targets **2 GiB (2,147,483,648 bytes)**. Both include a BIOS
-boot partition, 64 MiB configuration partition and 64 MiB EFI partition. The build fails if the compressed root
-does not fit with at least 64 MiB of initial headroom. `size-report.txt` records
-the actual result; the image is not silently enlarged to meet dependencies.
+The image is **2 GiB (2,147,483,648 bytes)**. It includes a BIOS boot partition,
+a 64 MiB configuration partition and a 64 MiB EFI partition. The build requires
+at least 64 MiB of headroom in the compressed root. The size report records the
+actual result.
 
 The first partition is a separate 64 MiB FAT32 volume labelled `OPENHD`, mounted
 at `/Config`. It contains ImageWriter's `config.txt` discovery marker and the
@@ -50,7 +50,7 @@ onboard Wi-Fi drivers remain available for management networking.
 
 ## OpenHD-OS desktop
 
-The optional desktop is a Hyprland session with a single Quickshell interface.
+The desktop is a Hyprland session with a single Quickshell interface.
 It uses the supplied Albatross 3.0 wallpaper unchanged, a slim OpenHD-OS status
 bar, and a centered five-app launcher for QOpenHD, ArduDeck, Kite GCS, INAV and
 Betaflight. Search filters the installed launch entries; arrow keys and Enter
@@ -76,9 +76,8 @@ console. Ctrl+Alt+F2 returns to a running desktop session.
 - Keyboard media keys adjust volume or the display backlight and show the new level.
 - Super+K opens the on-screen keyboard on touch devices.
 
-Hyprland and the Quickshell session use Wayland with XWayland for the installed
-Qt flight applications. QOpenHD in this desktop variant uses its X11 rendering
-path under XWayland; minimal mode remains the direct DRM/KMS path described below.
+Hyprland and Quickshell use Wayland with XWayland for the installed Qt flight
+applications. The QOpenHD launcher tile switches to the direct DRM/KMS view.
 
 ## Minimal QOpenHD display
 
@@ -162,17 +161,15 @@ desktop bar to restore a window. **Ctrl+Alt+Delete** opens Task Manager with the
 and resource graphs. Click the network icon for available connections, or
 right-click it for network controls and **Edit connections**.
 
-Open the desktop's OpenHD logo menu and select **Install OpenHD OS**. On the
-1 GiB minimal image, **Win+Tab** or the **Install** button in QOpenHD opens the
-same wizard directly. The unified image is capped at 2 GiB.
+Press **Win+Tab** from QOpenHD to open the desktop, then select **Install OpenHD
+OS** from the OpenHD logo menu.
 No terminal commands are required. The wizard lists disk model, size and serial,
 disables disks in use, and shows the selected disk again before erasing it.
 Two explicit acknowledgements enable the final **Erase disk and install** button.
 Progress, errors and restart/shutdown controls stay in the GUI.
 
-Installation works offline, copies the current OpenHD configuration and boots
-into QOpenHD from the installed drive. The desktop is included when the running
-USB image includes it.
+Installation works offline, copies the desktop and current OpenHD configuration,
+and boots into QOpenHD from the installed drive.
 
 The desktop and the local maintenance console automatically sign in as
 `openhd`. The default account password is `openhd`, and `sudo` does not

@@ -311,7 +311,7 @@ def main():
     (guest.test / "boot-animation.png").unlink(missing_ok=True)
     try:
         guest.tool("qemu-img", "create", "-f", "qcow2", "-F", "raw", "-b",
-                   "/output/openhd-debian-x86-minimal.img", "/output/vm-test/usb.qcow2")
+                   "/output/openhd-os-x86.img", "/output/vm-test/usb.qcow2")
         guest.tool("qemu-img", "resize", "/output/vm-test/usb.qcow2", "2G")
         guest.tool("qemu-img", "create", "-f", "qcow2", "/output/vm-test/internal.qcow2", "4G")
         guest.start("direct")

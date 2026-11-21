@@ -7,4 +7,5 @@ sources=${2:?Source directory or export-sources.py archive}
 [[ $(uname -m) == x86_64 ]] || exit 1
 bash "$here/bootstrap-builder.sh" "$work" "$sources"
 bash "$here/make-root.sh" "$work"
+bash "$here/add-desktop.sh" "$work"
 bash "$here/assemble-and-test.sh" "$work"

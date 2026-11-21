@@ -5,7 +5,7 @@ work=${1:?Usage: assemble.sh WORKDIR}
 root="$work/root"
 out=${OUTPUT_DIR:-$work/output}
 mkdir -p "$out" "$root/boot/grub" "$root/boot/efi"
-bytes=${IMAGE_BYTES:-1073741824}
+bytes=${IMAGE_BYTES:-2147483648}
 root_start=266240 # Config 64 MiB, BIOS 1 MiB, ESP 64 MiB, root last.
 root_sectors=$((bytes / 512 - root_start - 33))
 root_uuid=$(cat /proc/sys/kernel/random/uuid)
@@ -67,7 +67,7 @@ if ((root_bytes > root_sectors * 512 || used_bytes + 64 * 1024 * 1024 > root_byt
     echo "Root data needs $used_bytes bytes plus 64 MiB free; exceeds $bytes-byte image." >&2
     exit 1
 fi
-image="$out/openhd-debian-x86-minimal.img"
+image="$out/openhd-os-x86.img"
 rm -f "$image"
 truncate -s "$bytes" "$image"
 sgdisk --clear --new=1:2048:133119 --typecode=1:0700 --change-name=1:OPENHD \
@@ -91,5 +91,5 @@ sgdisk --verify "$image" >"$out/partition-check.txt"
 cp "$work/packages.tsv" "$out/"
 printf 'image_bytes=%s\nroot_filesystem_bytes=%s\nroot_used_bytes=%s\nminimum_free_bytes=%s\nroot_uuid=%s\nkernel=%s\n' \
     "$bytes" "$root_bytes" "$used_bytes" "$((root_bytes - used_bytes))" "$root_uuid" "$version" >"$out/size-report.txt"
-(cd "$out" && sha256sum openhd-debian-x86-minimal.img >SHA256SUMS)
+(cd "$out" && sha256sum openhd-os-x86.img >SHA256SUMS)
 echo "Built $image"

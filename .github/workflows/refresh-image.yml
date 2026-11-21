@@ -2,9 +2,6 @@ name: Refresh released image with Hyprland and current flight apps
 on:
   workflow_dispatch:
     inputs:
-      base_tag:
-        description: Optional compatible image release tag. Leave blank to build from source.
-        default: ''
       release_tag:
         description: Optional draft prerelease tag
         default: ''
@@ -15,70 +12,24 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
-    if: inputs.base_tag == ''
     uses: ./.github/workflows/build.yml
     with:
-      output: desktop-image
       release_metadata: ${{ inputs.release_tag != '' }}
-  image:
-    if: inputs.base_tag != ''
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install host image tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends mmdebstrap rsync btrfs-progs gdisk grub-common fonts-dejavu-core curl gnupg
-          df -h /opt
-      - name: Refresh the released root and verify the 2 GB image
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_TOKEN: ${{ github.token }}
-          BASE_TAG: ${{ inputs.base_tag }}
-        run: |
-          set -o pipefail
-          sudo --preserve-env=GH_TOKEN,GITHUB_TOKEN env IMAGE_BYTES=2147483648 bash debian-x86/refresh-released-image.sh /opt/openhd-os-work "$BASE_TAG" 2>&1 | tee /tmp/openhd-image-build.log
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: modern-desktop-validation
-          path: |
-            /tmp/openhd-image-build.log
-            /opt/openhd-os-work/output/vm-test/*.png
-            /opt/openhd-os-work/output/vm-test/*.log
-            /opt/openhd-os-work/output/*report.txt
-            /opt/openhd-os-work/desktop-apps.lock.json
-      - uses: actions/upload-artifact@v4
-        with:
-          name: openhd-os-hyprland-flight-apps-2gb
-          compression-level: 0
-          path: |
-            /opt/openhd-os-work/output/openhd-debian-x86-minimal.img
-            /opt/openhd-os-work/output/SHA256SUMS
-            /opt/openhd-os-work/output/packages.tsv
-            /opt/openhd-os-work/desktop-apps.lock.json
   release:
-    needs: [build, image]
-    if: ${{ !cancelled() && inputs.release_tag != '' && (needs.build.result == 'success' || needs.image.result == 'success') }}
+    needs: build
+    if: inputs.release_tag != ''
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.base_tag == '' && 'desktop-image' || 'openhd-os-hyprland-flight-apps-2gb' }}
+          name: openhd-os-x86
       - name: Stage requested preview release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag }}
           GH_REPO: ${{ github.repository }}
         run: |
-          image=$(find . -name openhd-debian-x86-minimal.img -type f -print -quit)
-          lock=$(find . -name desktop-apps.lock.json -type f -print -quit)
-          test -n "$image" && test -n "$lock"
-          (cd "$(dirname "$image")"; sha256sum -c SHA256SUMS)
-          mkdir release
-          mv "$image" release/openhd-os-x86.img
-          (cd release; sha256sum openhd-os-x86.img > SHA256SUMS)
-          gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --draft --prerelease --title 'OpenHD-OS Hyprland preview with current flight apps' --notes '2 GB Debian image with Hyprland, OpenHD 3.0 wallpaper, and Kite GC, ArduDeck, QGroundControl, INAV and Betaflight preinstalled. VM validation and upstream app versions are included as artifacts.' release/openhd-os-x86.img release/SHA256SUMS "$lock"
+          sha256sum -c SHA256SUMS
+          gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --draft --prerelease --title 'OpenHD-OS Hyprland preview with current flight apps' --notes '2 GiB Debian image with Hyprland, OpenHD 3.0 wallpaper, and Kite GC, ArduDeck, QGroundControl, INAV and Betaflight preinstalled.' openhd-os-x86.img SHA256SUMS desktop-apps.lock.json

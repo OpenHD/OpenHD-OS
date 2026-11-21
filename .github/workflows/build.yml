@@ -21,8 +21,8 @@ on:
     inputs:
       output:
         type: choice
-        options: [minimal-image, desktop-image, synced-images, packages]
-        default: synced-images
+        options: [desktop-image, packages]
+        default: desktop-image
       openhd_ref:
         default: openhd-3.0
       qopenhd_ref:
@@ -77,30 +77,16 @@ jobs:
       - name: Assemble the common Debian root
         if: inputs.output != 'packages'
         run: sudo bash debian-x86/make-root.sh /opt/openhd-os-work
-      - name: Build and test the minimal image
-        if: inputs.output == 'minimal-image' || inputs.output == 'synced-images'
-        run: sudo bash debian-x86/assemble-and-test.sh /opt/openhd-os-work --test
-      - uses: actions/upload-artifact@v4
-        if: inputs.output == 'minimal-image' || inputs.output == 'synced-images'
-        with:
-          name: minimal-image
-          path: /opt/openhd-os-work/output/openhd-debian-x86-minimal.img
-          if-no-files-found: error
-          retention-days: 7
-      - name: Build and test the desktop image
-        if: inputs.output == 'desktop-image' || inputs.output == 'synced-images'
+      - name: Build and test the unified image
+        if: inputs.output != 'packages'
         env:
-          PROFILE: ${{ inputs.output }}
           RELEASE_METADATA: ${{ inputs.release_metadata }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           work=/opt/openhd-os-work
-          if [[ "$PROFILE" == synced-images ]]; then
-            sudo mv "$work/output" "$work/minimal-output"
-          fi
           sudo env GITHUB_TOKEN="$GITHUB_TOKEN" bash debian-x86/add-desktop.sh "$work"
           jq -r '.apps[] | "\(.id) \(.version)"' "$work/desktop-apps.lock.json"
-          sudo env IMAGE_BYTES=2147483648 bash debian-x86/assemble-and-test.sh "$work" --test
+          sudo bash debian-x86/assemble-and-test.sh "$work" --test
           if [[ "$RELEASE_METADATA" == true ]]; then
             sudo cp "$work/desktop-apps.lock.json" "$work/output/"
           fi
@@ -116,11 +102,11 @@ jobs:
           name: debian-amd64-packages
           path: /opt/openhd-os-work/builder/packages/*.deb
       - uses: actions/upload-artifact@v4
-        if: inputs.output == 'desktop-image'
+        if: inputs.output != 'packages'
         with:
-          name: desktop-image
+          name: openhd-os-x86
           path: |
-            /opt/openhd-os-work/output/openhd-debian-x86-minimal.img
+            /opt/openhd-os-work/output/openhd-os-x86.img
             ${{ inputs.release_metadata && '/opt/openhd-os-work/output/SHA256SUMS' || '' }}
             ${{ inputs.release_metadata && '/opt/openhd-os-work/desktop-apps.lock.json' || '' }}
           if-no-files-found: error
