@@ -430,6 +430,39 @@ ShellRoot {
         }
     }
 
+    component PowerMenuRow: ItemDelegate {
+        id: row
+        required property string glyph
+        visible: shell.activeMenu === "power"
+        Layout.fillWidth: true
+        implicitHeight: 33
+        leftPadding: 9
+        rightPadding: 9
+        hoverEnabled: true
+        background: Rectangle {
+            radius: 3
+            color: row.down ? "#3a5672" : row.hovered || row.visualFocus ? "#334b64" : "transparent"
+        }
+        contentItem: RowLayout {
+            spacing: 10
+            Text {
+                text: row.glyph
+                color: "#a9bfd3"
+                font.family: "FontAwesome"
+                font.pixelSize: 13
+                Layout.preferredWidth: 16
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Text {
+                text: row.text
+                color: "#edf4fa"
+                font.family: "Inter"
+                font.pixelSize: 13
+                Layout.fillWidth: true
+            }
+        }
+    }
+
     PopupWindow {
         id: controlsMenu
         visible: shell.activeMenu !== ""
@@ -437,8 +470,10 @@ ShellRoot {
                      shell.activeMenu === "minimized" ? minimizedButton : audioButton
         anchor.edges: shell.activeMenu === "power" ? Edges.Bottom | Edges.Left : Edges.Bottom | Edges.Right
         anchor.gravity: shell.activeMenu === "power" ? Edges.Bottom | Edges.Right : Edges.Bottom | Edges.Left
-        implicitWidth: 278
-        implicitHeight: menuContents.implicitHeight + 28
+        readonly property bool powerMenu: shell.activeMenu === "power"
+        readonly property int inset: powerMenu ? 5 : 14
+        implicitWidth: powerMenu ? 232 : 278
+        implicitHeight: menuContents.implicitHeight + inset * 2
         color: "transparent"
 
         HyprlandFocusGrab {
@@ -449,17 +484,17 @@ ShellRoot {
 
         Rectangle {
             anchors.fill: parent
-            radius: 14
-            color: "#ed0b1725"
+            radius: controlsMenu.powerMenu ? 6 : 14
+            color: controlsMenu.powerMenu ? "#282e37" : "#ed0b1725"
             border.width: 1
-            border.color: "#805184a3"
+            border.color: controlsMenu.powerMenu ? "#536275" : "#805184a3"
             focus: true
             Keys.onEscapePressed: shell.activeMenu = ""
             ColumnLayout {
                 id: menuContents
-                anchors { top: parent.top; left: parent.left; right: parent.right; margins: 14 }
-                spacing: 6
-                Text { text: shell.activeMenu === "power" ? "Power" : shell.activeMenu === "minimized" ? "Minimized windows" : "Sound"; color: "#f4f8fc"; font.family: "Inter"; font.pixelSize: 16; font.weight: Font.DemiBold }
+                anchors { top: parent.top; left: parent.left; right: parent.right; margins: controlsMenu.inset }
+                spacing: controlsMenu.powerMenu ? 1 : 6
+                Text { visible: !controlsMenu.powerMenu; text: shell.activeMenu === "minimized" ? "Minimized windows" : "Sound"; color: "#f4f8fc"; font.family: "Inter"; font.pixelSize: 16; font.weight: Font.DemiBold }
                 Repeater {
                     model: shell.activeMenu === "minimized" ? shell.minimizedWindows : []
                     delegate: Button {
@@ -469,30 +504,33 @@ ShellRoot {
                         onClicked: shell.restoreWindow(modelData)
                     }
                 }
-                Button {
-                    visible: shell.activeMenu === "power"
-                    Layout.fillWidth: true
+                PowerMenuRow {
+                    glyph: "\uf019"
                     text: "Install OpenHD OS"
                     onClicked: shell.switchSession("install")
                 }
-                Button {
-                    visible: shell.activeMenu === "power"
-                    Layout.fillWidth: true
+                PowerMenuRow {
+                    glyph: "\uf080"
                     text: "Task Manager"
                     onClicked: {
                         shell.activeMenu = ""
                         Quickshell.execDetached(["gnome-system-monitor"])
                     }
                 }
-                Button {
-                    visible: shell.activeMenu === "power"
+                Rectangle {
+                    visible: controlsMenu.powerMenu
                     Layout.fillWidth: true
+                    Layout.preferredHeight: 1
+                    Layout.margins: 4
+                    color: "#495567"
+                }
+                PowerMenuRow {
+                    glyph: "\uf021"
                     text: "Restart"
                     onClicked: powerAction.run("reboot")
                 }
-                Button {
-                    visible: shell.activeMenu === "power"
-                    Layout.fillWidth: true
+                PowerMenuRow {
+                    glyph: "\uf011"
                     text: "Shut down"
                     onClicked: powerAction.run("poweroff")
                 }

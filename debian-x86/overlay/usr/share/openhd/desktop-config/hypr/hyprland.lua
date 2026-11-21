@@ -3,26 +3,26 @@ hl.plugin.load("/usr/lib/openhd/hyprbars.so")
 if hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
     local maximize = [[hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized" })']]
     hl.config({ plugin = { hyprbars = {
-        bar_height = 42,
+        bar_height = 46,
         bar_color = "rgba(101d2fff)",
         bar_text_font = "Inter",
         bar_text_size = 13,
         bar_text_align = "left",
         bar_padding = 16,
-        bar_button_padding = 9,
+        bar_button_padding = 6,
         bar_part_of_window = true,
         on_double_click = maximize,
     } } })
     hl.plugin.hyprbars.add_button({
-        bg_color = "rgba(721c3338)", fg_color = "rgb(ff556d)", size = 23, icon = "×",
+        bg_color = "rgba(721c3338)", fg_color = "rgb(ff556d)", size = 36, icon = "×",
         action = [[hyprctl dispatch 'hl.dsp.window.close()']],
     })
     hl.plugin.hyprbars.add_button({
-        bg_color = "rgba(00000000)", fg_color = "rgb(dce8ef)", size = 23, icon = "□",
+        bg_color = "rgba(00000000)", fg_color = "rgb(dce8ef)", size = 36, icon = "□",
         action = maximize,
     })
     hl.plugin.hyprbars.add_button({
-        bg_color = "rgba(00000000)", fg_color = "rgb(dce8ef)", size = 23, icon = "−",
+        bg_color = "rgba(00000000)", fg_color = "rgb(dce8ef)", size = 36, icon = "−",
         action = [[hyprctl dispatch 'hl.dsp.window.move({ workspace = "special:openhd-minimized", follow = false })']],
     })
 end

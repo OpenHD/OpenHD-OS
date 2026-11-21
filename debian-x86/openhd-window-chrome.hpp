@@ -26,7 +26,7 @@ inline auto create(int width, int height, double scale, double titleRight, bool 
     cairo_stroke(cr);
 
     const double left = std::max(w * 0.305, titleRight + 12);
-    const double right = w - 119;
+    const double right = w - 150;
     if (right - left >= 124 && h >= 34) {
         const double top = 1;
         const double bottom = std::min(h - 9, 26.0);
