@@ -223,13 +223,12 @@ class Guest:
             self.click(640, 550)  # Kite GCS, center tile on the Albatross launcher.
             self.run("timeout 10 sh -c 'until test -f /home/openhd/.local/state/openhd/apps/kite-gc.log; do sleep 0.25; done'")
             self.run("timeout 35 sh -c " + shlex.quote("until " + hyprctl + "clients | grep -q '^Window '; do sleep 0.25; done"))
-            # A mapped window precedes Kite's first draw and startup focus changes.
-            time.sleep(7)
             self.screenshot("kite-gc-from-launcher")
-            # Exercise the menu with a foreground application underneath it.
-            self.click(67, 32)
-            self.screenshot("desktop-power-menu-over-app")
-            self.click(140, 78)
+            # Use the desktop command here so this test can verify the installer
+            # while Kite is running. Menu clicks are checked in desktop_controls.
+            self.run(hyprctl + "eval " + shlex.quote(
+                "hl.exec_cmd('/usr/local/sbin/openhd-shell-action install')"
+            ))
         self.wait_view("installer", 1)
         self.installer_page(1)
 
