@@ -40,7 +40,9 @@ for binary in QOpenHD openhd openhd_sys_utils openhd-installer; do
     missing=$(chroot "$root" ldd "/usr/local/bin/$binary" | grep 'not found' || true)
     [[ -z "$missing" ]] || { echo "$missing" >&2; exit 1; }
 done
-cp -a "$here/overlay/." "$root/"
+# Preserve root ownership of the packaged overlay, irrespective of the
+# checkout owner's UID. sudo ignores a sudoers fragment owned by the runner.
+cp -a --no-preserve=ownership "$here/overlay/." "$root/"
 if [[ -f "$work/builder/src/source-manifest.json" ]]; then
     install -Dm644 "$work/builder/src/source-manifest.json" "$root/usr/share/openhd/source-manifest.json"
 fi
@@ -90,6 +92,7 @@ chroot "$root" systemctl mask getty@tty2.service autovt@tty2.service
 chroot "$root" systemctl enable getty@tty3.service
 find "$root/usr/local/sbin" -type f -exec chmod 755 {} +
 chmod 0440 "$root/etc/sudoers.d/openhd-display-switch"
+chroot "$root" visudo -c
 rm -f "$root/etc/grub.d/41_openhd_install" "$root/etc/openhd/usb-welcome"
 chmod 755 "$root/etc/grub.d/09_openhd"
 # Keep the menu direct even when Debian regenerates it after a kernel update.

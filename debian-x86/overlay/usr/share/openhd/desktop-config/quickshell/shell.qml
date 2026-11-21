@@ -124,8 +124,10 @@ ShellRoot {
     Process {
         id: sessionSwitch
         command: ["sudo", "-n", "/usr/local/sbin/openhd-switch-session", shell.switchTarget]
+        stderr: StdioCollector { id: switchError }
         onExited: code => {
             if (code !== 0) {
+                console.warn("OpenHD view switch failed:", shell.switchTarget, code, switchError.text.trim())
                 shell.revealDesktop()
                 shell.showHud("Could not switch view", -1)
             }
@@ -366,8 +368,7 @@ ShellRoot {
                     }
                     // Hyprland starts XWayland after the shell's startup hook.
                     // Dispatch here so X11 apps inherit the current display.
-                    Quickshell.execDetached(["hyprctl", "dispatch",
-                        'hl.dsp.exec_cmd("/usr/local/sbin/openhd-desktop-app ' + appId + '")'])
+                    Quickshell.execDetached(["/usr/local/sbin/openhd-shell-action", "launch", appId])
                     search.clear()
                 }
                 anchors.horizontalCenter: parent.horizontalCenter

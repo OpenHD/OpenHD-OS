@@ -18,7 +18,8 @@ if not app:
 environment = dict(os.environ)
 for key in ("QT_QPA_EGLFS_INTEGRATION", "QT_QPA_EGLFS_KMS_ATOMIC", "QT_QPA_EGLFS_KMS_CONFIG", "QT_PLUGIN_PATH", "QML2_IMPORT_PATH"):
     environment.pop(key, None)
-environment.update(QT_QPA_PLATFORM="xcb", QOPENHD_X86_KMS="0", QOPENHD_BOOT_ANIMATION="0")
+platform = "xcb" if environment.get("DISPLAY") else "wayland"
+environment.update(QT_QPA_PLATFORM=platform, QOPENHD_X86_KMS="0", QOPENHD_BOOT_ANIMATION="0")
 command = app["exec"] + sys.argv[2:]
 if app.get("format") == "appimage":
     environment["APPDIR"] = "/opt/openhd-apps/" + app["id"]

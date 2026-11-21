@@ -4,6 +4,7 @@ import argparse
 import json
 import pathlib
 import re
+import shlex
 import shutil
 import socket
 import subprocess
@@ -197,6 +198,20 @@ class Guest:
         if desktop:
             self.wait_view("desktop", 2)
             self.desktop_ui()
+            self.run("dpkg-query -W hyprland-guiutils && runuser -u openhd -- sudo -n -l /usr/local/sbin/openhd-switch-session flight && runuser -u openhd -- sudo -n -l /usr/local/sbin/openhd-switch-session install")
+            hyprctl = (
+                "signature=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | "
+                "sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p'); "
+                'runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 HYPRLAND_INSTANCE_SIGNATURE="$signature" hyprctl '
+            )
+            config = self.run(hyprctl + "configerrors")
+            if "Config error" in config:
+                raise RuntimeError("Hyprland configuration errors:\n" + config)
+            self.click(640, 550)  # Kite GCS, center tile on the Albatross launcher.
+            self.run("timeout 10 sh -c 'until test -f /home/openhd/.local/state/openhd/apps/kite-gc.log; do sleep 0.25; done'")
+            self.run("timeout 35 sh -c " + shlex.quote("until " + hyprctl + "clients | grep -q '^Window '; do sleep 0.25; done"))
+            self.screenshot("kite-gc-from-launcher")
+            self.send_shortcut("alt", "f4")
             self.desktop_action("install")
         self.wait_view("installer", 1)
         self.installer_page(1)
@@ -364,7 +379,7 @@ def main():
     except Exception:
         if guest.process and guest.process.poll() is None:
             try:
-                diagnostic = guest.run("journalctl -b -u qopenhd -u openhd-installer -u openhd-grow-root --no-pager; journalctl -b --no-pager | grep -Ei 'quickshell|\\bqs\\b|hyprland|greetd' | tail -n 160; cat /home/openhd/.local/state/openhd/quickshell.log 2>&1 || true; pgrep -af 'qs|Hyprland|greetd' || true; ls -la /run/user/1000 /dev/dri 2>&1; systemctl --failed --no-pager", expected=None, timeout=30)
+                diagnostic = guest.run("journalctl -b -u qopenhd -u openhd-installer -u openhd-desktop --no-pager; journalctl -b --no-pager | grep -Ei 'quickshell|\\bqs\\b|hyprland|greetd|sudo|openhd-app-launch' | tail -n 160; cat /home/openhd/.local/state/openhd/quickshell.log /home/openhd/.local/state/openhd/apps/*.log 2>&1 || true; pgrep -af 'qs|Hyprland|greetd' || true; ls -la /run/user/1000 /dev/dri /etc/sudoers.d 2>&1; systemctl --failed --no-pager", expected=None, timeout=30)
                 (guest.test / "failure-diagnostics.txt").write_text(diagnostic)
                 print("Desktop failure diagnostics:\n" + diagnostic, flush=True)
                 guest.screenshot("failure")

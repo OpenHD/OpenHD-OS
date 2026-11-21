@@ -2,6 +2,35 @@
 set -eu
 qs_config=/usr/share/openhd/desktop-config/quickshell
 case "${1:-}" in
+    launch|run-app)
+        app=${2:-}
+        case "$app" in
+            ''|*[!a-z0-9-]*) exit 2 ;;
+        esac
+        if [ "$1" = run-app ]; then
+            logdir="${XDG_STATE_HOME:-$HOME/.local/state}/openhd/apps"
+            mkdir -p "$logdir"
+            logfile="$logdir/$app.log"
+            if /usr/local/sbin/openhd-desktop-app "$app" >"$logfile" 2>&1; then
+                exit 0
+            fi
+            notify-send "OpenHD OS" "$app exited with an error. See $logfile"
+            exit 1
+        fi
+        # Only the validated app ID is interpolated into Lua. The process is
+        # started by Hyprland with its current Xwayland and Wayland environment.
+        result=$(hyprctl eval "hl.exec_cmd('/usr/local/sbin/openhd-shell-action run-app $app')" 2>&1) || {
+            printf '%s\n' "$result" >&2
+            notify-send "OpenHD OS" "Could not launch $app"
+            exit 1
+        }
+        case "$result" in
+            ok) ;;
+            *) logger -t openhd-app-launch -- "$app: $result"
+               notify-send "OpenHD OS" "Could not launch $app"
+               exit 1 ;;
+        esac
+        ;;
     keyboard)
         if pgrep -x wvkbd-mobintl >/dev/null; then pkill -x wvkbd-mobintl; else wvkbd-mobintl & fi
         ;;

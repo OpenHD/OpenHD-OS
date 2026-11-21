@@ -14,14 +14,14 @@ chroot "$work/root" apt-get update
 printf 'deb https://deb.debian.org/debian trixie-backports main\n' >"$work/root/etc/apt/sources.list.d/openhd-backports.list"
 chroot "$work/root" apt-get update
 chroot "$work/root" apt-get -t trixie-backports install -y --no-install-recommends \
-    hyprland xdg-desktop-portal-hyprland \
+    hyprland hyprland-guiutils xdg-desktop-portal-hyprland \
     greetd quickshell mako-notifier foot xwayland thunar \
     dbus-x11 qt6-wayland qtwayland5 wvkbd nm-tray nm-connection-editor gnome-system-monitor lxpolkit arc-theme papirus-icon-theme \
     fonts-inter fonts-font-awesome libnotify-bin brightnessctl brightness-udev \
     pipewire pipewire-pulse wireplumber alsa-ucm-conf firmware-sof-signed pavucontrol xdg-desktop-portal-gtk
 chroot "$work/root" apt-get purge -y xfce4-session xfce4-panel xfwm4 xfdesktop4 \
     xfce4-settings xinit xterm xserver-xorg-core xserver-xorg-input-libinput
-# The appliance service owns tty1 and starts greetd only in desktop mode.
+# The appliance service starts greetd on VT2 only when entering the desktop.
 chroot "$work/root" systemctl mask greetd.service
 chroot "$work/root" systemctl --global enable pipewire.socket pipewire-pulse.socket wireplumber.service
 chroot "$work/root" apt-get clean
