@@ -223,6 +223,8 @@ class Guest:
             self.click(640, 550)  # Kite GCS, center tile on the Albatross launcher.
             self.run("timeout 10 sh -c 'until test -f /home/openhd/.local/state/openhd/apps/kite-gc.log; do sleep 0.25; done'")
             self.run("timeout 35 sh -c " + shlex.quote("until " + hyprctl + "clients | grep -q '^Window '; do sleep 0.25; done"))
+            # A mapped window precedes Kite's first draw and startup focus changes.
+            time.sleep(7)
             self.screenshot("kite-gc-from-launcher")
             # Exercise the menu with a foreground application underneath it.
             self.click(67, 32)
