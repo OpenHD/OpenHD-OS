@@ -345,7 +345,8 @@ def main():
         guest.start("bios")
         guest.ready()
         guest.flight_ui()
-        desktop = "DESKTOP_AVAILABLE" in guest.run("test ! -x /usr/bin/Hyprland || echo DESKTOP_AVAILABLE")
+        desktop = bool(re.search(r"(?m)^DESKTOP_AVAILABLE\r?$",
+                                 guest.run("test ! -x /usr/bin/Hyprland || echo DESKTOP_AVAILABLE")))
         guest.open_installer(desktop)
         guest.screenshot("installer-from-session")
         # SysUtils can request a QOpenHD start while the wizard owns VT1.
