@@ -29,6 +29,13 @@ cp "$work/builder/packages/"*.deb "$root/tmp/packages/"
 chroot "$root" apt-get update
 chroot "$root" apt-get install -y --no-install-recommends busybox zstd sudo grub-efi-amd64-signed shim-signed plymouth plymouth-themes gstreamer1.0-libav libqt5multimedia5-plugins vainfo cloud-guest-utils
 chroot "$root" /bin/sh -c 'apt-get install -y --no-install-recommends /tmp/packages/*.deb'
+# Keep Plymouth's distro-owned config file under Debian package ownership.
+# The appliance-specific boot setting is applied after package installation.
+install -d "$root/etc/plymouth"
+cat >"$root/etc/plymouth/plymouthd.conf" <<'EOF'
+[Daemon]
+ShowDelay=0
+EOF
 for binary in QOpenHD openhd openhd_sys_utils openhd-installer; do
     missing=$(chroot "$root" ldd "/usr/local/bin/$binary" | grep 'not found' || true)
     [[ -z "$missing" ]] || { echo "$missing" >&2; exit 1; }
