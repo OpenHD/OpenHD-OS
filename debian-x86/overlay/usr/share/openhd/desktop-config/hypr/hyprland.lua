@@ -3,26 +3,26 @@ hl.plugin.load("/usr/lib/openhd/hyprbars.so")
 if hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
     local maximize = [[hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized" })']]
     hl.config({ plugin = { hyprbars = {
-        bar_height = 34,
-        bar_color = "rgba(101d2cf5)",
+        bar_height = 42,
+        bar_color = "rgba(101d2fff)",
         bar_text_font = "Inter",
         bar_text_size = 13,
         bar_text_align = "left",
-        bar_padding = 12,
-        bar_button_padding = 7,
+        bar_padding = 16,
+        bar_button_padding = 9,
         bar_part_of_window = true,
         on_double_click = maximize,
     } } })
     hl.plugin.hyprbars.add_button({
-        bg_color = "rgb(a73549)", fg_color = "rgb(ffffff)", size = 20, icon = "×",
+        bg_color = "rgba(721c3338)", fg_color = "rgb(ff556d)", size = 23, icon = "×",
         action = [[hyprctl dispatch 'hl.dsp.window.close()']],
     })
     hl.plugin.hyprbars.add_button({
-        bg_color = "rgb(26475e)", fg_color = "rgb(ffffff)", size = 20, icon = "□",
+        bg_color = "rgba(00000000)", fg_color = "rgb(dce8ef)", size = 23, icon = "□",
         action = maximize,
     })
     hl.plugin.hyprbars.add_button({
-        bg_color = "rgb(26475e)", fg_color = "rgb(ffffff)", size = 20, icon = "−",
+        bg_color = "rgba(00000000)", fg_color = "rgb(dce8ef)", size = 23, icon = "−",
         action = [[hyprctl dispatch 'hl.dsp.window.move({ workspace = "special:openhd-minimized", follow = false })']],
     })
 end
@@ -41,10 +41,13 @@ hl.config({
     general = {
         gaps_in = 7, gaps_out = 16, border_size = 2, resize_on_border = true,
         layout = "dwindle",
-        col = { active_border = { colors = {"rgba(71dce9ee)", "rgba(407eb8cc)"}, angle = 35 }, inactive_border = "rgba(2a3b5366)" },
+        col = {
+            active_border = { colors = {"rgba(a6b8c7ee)", "rgba(4c6579ee)", "rgba(293a4deb)", "rgba(7893a4f0)"}, angle = 145 },
+            inactive_border = { colors = {"rgba(697c8eb8)", "rgba(283747c0)"}, angle = 145 },
+        },
     },
     decoration = {
-        rounding = 14, rounding_power = 2,
+        rounding = 18, rounding_power = 2,
         active_opacity = 1.0, inactive_opacity = 0.97,
         shadow = { enabled = true, range = 18, render_power = 3, color = 0x99101928 },
         blur = { enabled = true, size = 4, passes = 2, vibrancy = 0.12 },
