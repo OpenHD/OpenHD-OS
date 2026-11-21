@@ -12,11 +12,18 @@ guest_dir=${source_dir#"$builder"}
 printf 'deb https://deb.debian.org/debian trixie-backports main\n' >"$builder/etc/apt/sources.list.d/openhd-backports.list"
 chroot "$builder" apt-get update
 chroot "$builder" apt-get -t trixie-backports install -y --no-install-recommends \
-    "hyprland-dev=$version" g++ make pkg-config libpango1.0-dev libpixman-1-dev \
+    "hyprland-dev=$version" g++ make pkg-config liblua5.4-dev libpango1.0-dev libpixman-1-dev \
     libdrm-dev libinput-dev libudev-dev libwayland-dev libxkbcommon-dev
 curl -fsSL --retry 3 "https://codeload.github.com/hyprwm/hyprland-plugins/tar.gz/$plugin_commit" |
     tar -xz --strip-components=1 -C "$source_dir"
-chroot "$builder" make -j2 -C "$guest_dir/hyprbars" CXX=g++
+# The upstream makefile inherits CXXFLAGS and adds the plugin build flags.
+# Hyprland's pkg-config file does not expose its Lua and Pango include paths.
+# shellcheck disable=SC2016
+chroot "$builder" bash -c '
+    set -eu
+    includes=$(pkg-config --cflags lua5.4 pangocairo)
+    CXXFLAGS="-O2 $includes" make -j2 -C "$1/hyprbars" CXX=g++
+' bash "$guest_dir"
 chroot "$builder" strip --strip-unneeded "$guest_dir/hyprbars/hyprbars.so"
 package="$source_dir/package"
 install -Dm644 "$source_dir/hyprbars/hyprbars.so" "$package/usr/lib/openhd/hyprbars.so"

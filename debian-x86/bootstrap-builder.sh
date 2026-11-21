@@ -16,6 +16,8 @@ if [[ ! -e "$work/builder/etc/debian_version" ]]; then
         "deb [signed-by=$work/keys/trixie.gpg] https://deb.debian.org/debian trixie main"
     printf 'deb https://deb.debian.org/debian trixie main\ndeb https://deb.debian.org/debian-security trixie-security main\ndeb https://deb.debian.org/debian trixie-updates main\n' >"$work/builder/etc/apt/sources.list"
 fi
+install -d "$work/builder/etc/apt/apt.conf.d"
+printf 'Acquire::Retries "3";\n' >"$work/builder/etc/apt/apt.conf.d/90openhd-retries"
 mkdir -p "$work/builder/src"
 if [[ -f "$sources" ]]; then
     tar -xzf "$sources" -C "$work/builder/src"
