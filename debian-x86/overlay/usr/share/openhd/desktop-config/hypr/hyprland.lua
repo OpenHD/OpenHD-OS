@@ -3,7 +3,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("sh -c 'mkdir -p /home/openhd/.local/state/openhd; exec qs -p /usr/share/openhd/desktop-config/quickshell >>/home/openhd/.local/state/openhd/quickshell.log 2>&1'")
     hl.exec_cmd("mako -c /usr/share/openhd/desktop-config/mako/config")
     hl.exec_cmd("lxpolkit")
-    hl.exec_cmd("nm-tray")
+    hl.exec_cmd("env XDG_CONFIG_DIRS=/usr/share/openhd/desktop-config/nm-tray:/etc/xdg nm-tray")
 end)
 
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = "auto" })

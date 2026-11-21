@@ -51,10 +51,16 @@ ShellRoot {
 
     function openNetwork() {
         activeMenu = ""
+        if (networkItem && !networkItem.onlyMenu)
+            networkItem.activate()
+        else
+            openNetworkSettings()
+    }
+
+    function openNetworkSettings() {
+        activeMenu = ""
         if (networkItem?.hasMenu)
             networkMenu.open()
-        else if (networkItem)
-            networkItem.activate()
         else
             Quickshell.execDetached(["nm-connection-editor"])
     }
@@ -268,7 +274,7 @@ ShellRoot {
                     onClicked: shell.openNetwork()
                     TapHandler {
                         acceptedButtons: Qt.RightButton
-                        onTapped: Quickshell.execDetached(["nm-connection-editor"])
+                        onTapped: shell.openNetworkSettings()
                     }
                     background: Rectangle { radius: 8; color: networkButton.hovered ? "#294057" : "transparent" }
                     contentItem: Text {

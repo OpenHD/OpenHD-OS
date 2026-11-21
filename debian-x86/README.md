@@ -159,8 +159,8 @@ Use **Alt+Tab** to cycle desktop windows and **Alt+F4** to close the focused
 window. Drag the active window's title in the top bar to move it. Drag the
 diagonal arrow or a window border to resize. The top bar can also float,
 maximize, restore and close the active window. **Ctrl+Alt+Delete** opens Task Manager with the process list
-and resource graphs. Click the network icon for connections, or right-click
-it to edit profiles.
+and resource graphs. Click the network icon for available connections, or
+right-click it for network controls and **Edit connections**.
 
 Open the desktop's OpenHD logo menu and select **Install OpenHD OS**. On the
 1 GiB minimal image, **Win+Tab** or the **Install** button in QOpenHD opens the
