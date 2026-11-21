@@ -1,4 +1,32 @@
 -- OpenHD skin for Hyprland 0.55 (Debian 13 backports).
+hl.plugin.load("/usr/lib/openhd/hyprbars.so")
+if hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
+    local maximize = [[hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized" })']]
+    hl.config({ plugin = { hyprbars = {
+        bar_height = 34,
+        bar_color = "rgba(101d2cf5)",
+        bar_text_font = "Inter",
+        bar_text_size = 13,
+        bar_text_align = "left",
+        bar_padding = 12,
+        bar_button_padding = 7,
+        bar_part_of_window = true,
+        on_double_click = maximize,
+    } } })
+    hl.plugin.hyprbars.add_button({
+        bg_color = "rgb(a73549)", fg_color = "rgb(ffffff)", size = 20, icon = "×",
+        action = [[hyprctl dispatch 'hl.dsp.window.close()']],
+    })
+    hl.plugin.hyprbars.add_button({
+        bg_color = "rgb(26475e)", fg_color = "rgb(ffffff)", size = 20, icon = "□",
+        action = maximize,
+    })
+    hl.plugin.hyprbars.add_button({
+        bg_color = "rgb(26475e)", fg_color = "rgb(ffffff)", size = 20, icon = "−",
+        action = [[hyprctl dispatch 'hl.dsp.window.move({ workspace = "special:openhd-minimized", follow = false })']],
+    })
+end
+
 hl.on("hyprland.start", function()
     hl.exec_cmd("sh -c 'mkdir -p /home/openhd/.local/state/openhd; exec qs -p /usr/share/openhd/desktop-config/quickshell >>/home/openhd/.local/state/openhd/quickshell.log 2>&1'")
     hl.exec_cmd("mako -c /usr/share/openhd/desktop-config/mako/config")

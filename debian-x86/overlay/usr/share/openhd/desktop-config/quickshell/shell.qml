@@ -24,25 +24,18 @@ ShellRoot {
         /nm[-_ ]?tray|networkmanager/i.test(item.id + " " + item.title)
     ) ?? null
 
-    function windowAction(dispatcher) {
-        Hyprland.dispatch(dispatcher)
-    }
+    readonly property var minimizedWindows: Hyprland.toplevels.values.filter(
+        window => window.workspace?.name === "special:openhd-minimized"
+    )
 
-    component WindowDrag: DragHandler {
-        required property string action
-        property point previous: Qt.point(0, 0)
-        target: null
-        onActiveChanged: previous = Qt.point(0, 0)
-        onActiveTranslationChanged: {
-            if (!active)
-                return
-            const x = Math.round(activeTranslation.x - previous.x)
-            const y = Math.round(activeTranslation.y - previous.y)
-            if (x === 0 && y === 0)
-                return
-            previous = Qt.point(previous.x + x, previous.y + y)
-            shell.windowAction("hl.dsp.window." + action + "({ x = " + x + ", y = " + y + ", relative = true })")
-        }
+    function restoreWindow(window) {
+        const address = window.address.replace(/^0x/, "")
+        const workspace = Hyprland.focusedWorkspace?.id ?? 1
+        if (!/^[a-fA-F0-9]+$/.test(address) || workspace < 1)
+            return
+        activeMenu = ""
+        Hyprland.dispatch('hl.dsp.window.move({ workspace = ' + workspace +
+                          ', window = "address:0x' + address + '", follow = true })')
     }
 
     function toggleMenu(name) {
@@ -229,44 +222,11 @@ ShellRoot {
                     }
                 }
                 Item { Layout.fillWidth: true }
-                Text {
-                    visible: Hyprland.activeToplevel !== null
-                    text: Hyprland.activeToplevel?.title || "Window"
-                    Layout.maximumWidth: Math.max(0, topBar.width / 4)
-                    elide: Text.ElideRight
-                    color: "#b6c7d8"
-                    WindowDrag { action: "move"; cursorShape: Qt.SizeAllCursor }
-                    HoverHandler { id: titleHover; cursorShape: Qt.SizeAllCursor }
-                    ToolTip.visible: titleHover.hovered
-                    ToolTip.text: "Drag to move window"
-                }
-                Label {
-                    visible: !!Hyprland.activeToplevel
-                    text: "↘"
-                    Layout.preferredWidth: 26
-                    horizontalAlignment: Text.AlignHCenter
-                    Accessible.name: "Drag to resize window"
-                    WindowDrag { action: "resize"; cursorShape: Qt.SizeFDiagCursor }
-                    HoverHandler { id: resizeHover; cursorShape: Qt.SizeFDiagCursor }
-                    ToolTip.visible: resizeHover.hovered
-                    ToolTip.text: "Drag to resize window"
-                }
-                Repeater {
-                    model: [
-                        { icon: "⇱", name: "Toggle floating. Win + drag to move, or drag a window edge to resize.", action: 'hl.dsp.window.float({ action = "toggle" })' },
-                        { icon: "□", name: "Maximize or restore window", action: 'hl.dsp.window.fullscreen({ mode = "maximized" })' },
-                        { icon: "×", name: "Close window (Alt+F4)", action: "hl.dsp.window.close()" }
-                    ]
-                    delegate: Button {
-                        required property var modelData
-                        visible: !!Hyprland.activeToplevel
-                        Layout.preferredWidth: 30
-                        text: modelData.icon
-                        Accessible.name: modelData.name
-                        ToolTip.visible: hovered
-                        ToolTip.text: modelData.name
-                        onClicked: shell.windowAction(modelData.action)
-                    }
+                Button {
+                    id: minimizedButton
+                    visible: shell.minimizedWindows.length > 0
+                    text: "Minimized (" + shell.minimizedWindows.length + ")"
+                    onClicked: shell.toggleMenu("minimized")
                 }
                 Button {
                     id: networkButton
@@ -473,7 +433,8 @@ ShellRoot {
     PopupWindow {
         id: controlsMenu
         visible: shell.activeMenu !== ""
-        anchor.item: shell.activeMenu === "power" ? brandButton : audioButton
+        anchor.item: shell.activeMenu === "power" ? brandButton :
+                     shell.activeMenu === "minimized" ? minimizedButton : audioButton
         anchor.edges: shell.activeMenu === "power" ? Edges.Bottom | Edges.Left : Edges.Bottom | Edges.Right
         anchor.gravity: shell.activeMenu === "power" ? Edges.Bottom | Edges.Right : Edges.Bottom | Edges.Left
         implicitWidth: 278
@@ -498,7 +459,16 @@ ShellRoot {
                 id: menuContents
                 anchors { top: parent.top; left: parent.left; right: parent.right; margins: 14 }
                 spacing: 6
-                Text { text: shell.activeMenu === "power" ? "Power" : "Sound"; color: "#f4f8fc"; font.family: "Inter"; font.pixelSize: 16; font.weight: Font.DemiBold }
+                Text { text: shell.activeMenu === "power" ? "Power" : shell.activeMenu === "minimized" ? "Minimized windows" : "Sound"; color: "#f4f8fc"; font.family: "Inter"; font.pixelSize: 16; font.weight: Font.DemiBold }
+                Repeater {
+                    model: shell.activeMenu === "minimized" ? shell.minimizedWindows : []
+                    delegate: Button {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        text: modelData.title || "Window"
+                        onClicked: shell.restoreWindow(modelData)
+                    }
+                }
                 Button {
                     visible: shell.activeMenu === "power"
                     Layout.fillWidth: true

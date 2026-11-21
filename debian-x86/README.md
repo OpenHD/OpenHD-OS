@@ -156,9 +156,9 @@ Open desktop applications stay running, while the QOpenHD display frontend
 restarts to reacquire KMS. The OpenHD receiver service stays running.
 
 Use **Alt+Tab** to cycle desktop windows and **Alt+F4** to close the focused
-window. Drag the active window's title in the top bar to move it. Drag the
-diagonal arrow or a window border to resize. The top bar can also float,
-maximize, restore and close the active window. **Ctrl+Alt+Delete** opens Task Manager with the process list
+window. Drag its title bar to move it or its edges to resize it. Each title
+bar has minimize, maximize and close buttons. Select **Minimized** in the
+desktop bar to restore a window. **Ctrl+Alt+Delete** opens Task Manager with the process list
 and resource graphs. Click the network icon for available connections, or
 right-click it for network controls and **Edit connections**.
 
@@ -174,8 +174,9 @@ Installation works offline, copies the current OpenHD configuration and boots
 into QOpenHD from the installed drive. The desktop is included when the running
 USB image includes it.
 
-Use **Ctrl+Alt+F3** for the local maintenance console. Log in as `openhd`
-with password `openhd`. Getty is masked on both
+The desktop and the local maintenance console automatically sign in as
+`openhd`. The default account password is `openhd`, and `sudo` does not
+prompt for it. Use **Ctrl+Alt+F3** to open the maintenance console. Getty is masked on both
 graphical terminals, and kernel and system diagnostics use tty3. Plymouth is
 configured to use the firmware display early, and VT1 is cleared before QOpenHD.
 Startup uses the partition layout prepared by ImageWriter or the installer.

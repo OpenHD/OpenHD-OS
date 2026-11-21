@@ -1,0 +1,16 @@
+polkit.addRule(function (action, subject) {
+    if (subject.user !== "openhd" || !subject.local || !subject.active)
+        return;
+    var prefix = "org.freedesktop.NetworkManager.";
+    if (action.id.indexOf(prefix) !== 0)
+        return;
+    var permission = action.id.substring(prefix.length);
+    if (permission === "network-control" ||
+        permission === "settings.modify.system" ||
+        permission === "settings.modify.own" ||
+        permission === "wifi.scan" ||
+        permission === "enable-disable-network" ||
+        permission === "enable-disable-wifi" ||
+        permission === "enable-disable-wwan")
+        return polkit.Result.YES;
+});

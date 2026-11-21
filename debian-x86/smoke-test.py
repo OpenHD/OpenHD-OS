@@ -207,6 +207,14 @@ class Guest:
             config = self.run(hyprctl + "configerrors")
             if "Config error" in config:
                 raise RuntimeError("Hyprland configuration errors:\n" + config)
+            self.run(hyprctl + "plugin list | grep -qi hyprbars")
+            self.run("runuser -u openhd -- sudo -n id -u | grep -qx 0")
+            permissions = "/run/user/1000/openhd-nm-permissions"
+            query = f"hl.exec_cmd('nmcli -t -f PERMISSION,VALUE general permissions >{permissions}')"
+            self.run(hyprctl + "eval " + shlex.quote(query))
+            self.run("timeout 10 sh -c " + shlex.quote(
+                f"until grep -qx 'org.freedesktop.NetworkManager.settings.modify.system:yes' {permissions} 2>/dev/null; do sleep 0.25; done"
+            ))
             self.click(640, 550)  # Kite GCS, center tile on the Albatross launcher.
             self.run("timeout 10 sh -c 'until test -f /home/openhd/.local/state/openhd/apps/kite-gc.log; do sleep 0.25; done'")
             self.run("timeout 35 sh -c " + shlex.quote("until " + hyprctl + "clients | grep -q '^Window '; do sleep 0.25; done"))
