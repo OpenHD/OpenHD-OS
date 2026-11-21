@@ -496,7 +496,7 @@ new file mode 100644
 +                            auto* hud = drmModeGetPlane(fd, planes->planes[h]);
 +                            if (!hud) continue;
 +                            const auto hudZ = property(fd, hud->plane_id, "zpos");
-+                            if ((hud->possible_crtcs & (1u << ci)) && !hud->crtc_id &&
++                            if ((hud->possible_crtcs & (1u << ci)) && (!hud->crtc_id || hud->crtc_id == resources->crtcs[ci]) &&
 +                                    hasFormat(hud, DRM_FORMAT_ARGB8888) &&
 +                                    property(fd, hud->plane_id, "type").value == DRM_PLANE_TYPE_OVERLAY &&
 +                                    videoZ.id && hudZ.id && hudZ.value > videoZ.value) {
