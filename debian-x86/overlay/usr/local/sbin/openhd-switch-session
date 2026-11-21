@@ -1,0 +1,80 @@
+#!/bin/sh
+# The desktop stays running on VT2. Only the foreground owns DRM scanout.
+set -eu
+[ "$(id -u)" = 0 ] || exit 1
+state=/run/openhd-view
+mkdir -p "$state"
+exec 9>"$state/lock"
+flock 9
+
+set_view() {
+    printf '%s\n' "$1" >"$state/current.new"
+    mv -f "$state/current.new" "$state/current"
+}
+
+desktop() {
+    [ -x /usr/bin/Hyprland ] || return 1
+    uid=$(id -u openhd)
+    # The subshell reads the running session's display, not the root caller's.
+    # shellcheck disable=SC2016
+    systemctl start openhd-desktop.service && chvt 2 &&
+        timeout 18 sh -c '
+            while :; do
+                pid=$(pgrep -nx -u "$1" qs || true)
+                if [ -n "$pid" ]; then
+                    display=$(tr "\\0" "\\n" <"/proc/$pid/environ" | sed -n "s/^WAYLAND_DISPLAY=//p")
+                    if [ -n "$display" ] && runuser -u openhd -- env XDG_RUNTIME_DIR="/run/user/$1" WAYLAND_DISPLAY="$display" \
+                        qs -p /usr/share/openhd/desktop-config/quickshell ipc show 2>/dev/null |
+                        grep -q "target desktop"; then exit 0; fi
+                fi
+                sleep 0.25
+            done
+        ' sh "$uid" && set_view desktop
+}
+
+flight() {
+    chvt 1
+    systemctl start qopenhd.service
+    set_view flight
+}
+
+installer() {
+    printf '%s\n' "$1" >"$state/installer-return"
+    set_view installer
+    if ! chvt 1 || ! systemctl start openhd-installer.service; then
+        rm -f "$state/installer-return"
+        if [ "$1" = desktop ]; then desktop; else flight; fi
+        return 1
+    fi
+}
+
+case "${1:-}" in
+    desktop)
+        if [ -x /usr/bin/Hyprland ]; then
+            if ! desktop; then
+                systemctl stop openhd-desktop.service
+                flight
+                exit 1
+            fi
+        else
+            installer flight
+        fi
+        ;;
+    flight)
+        [ ! -e "$state/installer-return" ] || exit 1
+        flight
+        ;;
+    install)
+        [ ! -e "$state/installer-return" ] || exit 1
+        [ "$(cat "$state/current" 2>/dev/null)" = desktop ] || exit 1
+        installer desktop
+        ;;
+    installer-return)
+        [ -f "$state/installer-return" ] || exit 0
+        destination=$(cat "$state/installer-return")
+        rm -f "$state/installer-return"
+        if [ "$destination" = desktop ] && desktop; then exit 0; fi
+        flight
+        ;;
+    *) exit 2 ;;
+esac

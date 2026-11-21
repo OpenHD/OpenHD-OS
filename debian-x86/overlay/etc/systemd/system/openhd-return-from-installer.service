@@ -1,0 +1,7 @@
+[Unit]
+Description=Restore the OpenHD view after setup closes
+After=openhd-installer.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/openhd-switch-session installer-return

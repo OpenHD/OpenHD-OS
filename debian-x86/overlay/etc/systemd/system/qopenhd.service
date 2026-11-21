@@ -3,13 +3,14 @@ Description=QOpenHD
 After=systemd-udev-settle.service plymouth-start.service openhd-sys-utils.service openhd-installer.service systemd-user-sessions.service
 RequiresMountsFor=/Config
 Wants=systemd-udev-settle.service
-Conflicts=getty@tty1.service autovt@tty1.service
+Conflicts=getty@tty1.service autovt@tty1.service openhd-installer.service
 StartLimitIntervalSec=0
 ConditionKernelCommandLine=!openhd.console
 
 [Service]
 Type=simple
 ExecStart=/usr/local/sbin/openhd-session
+ExecStopPost=/usr/local/sbin/openhd-session-exited flight
 Environment=QT_QPA_PLATFORM=eglfs
 Environment=QT_QPA_EGLFS_INTEGRATION=eglfs_kms
 Environment=QT_QPA_EGLFS_KMS_ATOMIC=1
@@ -28,6 +29,8 @@ StandardError=journal
 Environment=QSG_INFO=1
 TTYReset=yes
 TTYVHangup=yes
+SuccessExitStatus=42
+RestartPreventExitStatus=42
 Restart=always
 RestartSec=3
 

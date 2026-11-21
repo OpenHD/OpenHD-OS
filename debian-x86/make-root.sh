@@ -78,15 +78,18 @@ chroot "$root" systemctl mask plymouth-quit.service plymouth-quit-wait.service
 # tty1 belongs exclusively to QOpenHD. Mask both names
 # so logind's automatic VT activation cannot start a login prompt underneath it.
 chroot "$root" systemctl mask getty@tty1.service autovt@tty1.service
-chroot "$root" systemctl enable getty@tty2.service
+chroot "$root" systemctl disable getty@tty2.service
+chroot "$root" systemctl mask getty@tty2.service autovt@tty2.service
+chroot "$root" systemctl enable getty@tty3.service
 find "$root/usr/local/sbin" -type f -exec chmod 755 {} +
+chmod 0440 "$root/etc/sudoers.d/openhd-display-switch"
 rm -f "$root/etc/grub.d/41_openhd_install" "$root/etc/openhd/usb-welcome"
 chmod 755 "$root/etc/grub.d/09_openhd"
 # Keep the menu direct even when Debian regenerates it after a kernel update.
 chmod -x "$root/etc/grub.d/10_linux" "$root/etc/grub.d/20_linux_xen" "$root/etc/grub.d/30_uefi-firmware" 2>/dev/null || true
 # Preserve Devourer ownership and USB rules provided by SysUtils.
 chroot "$root" systemctl enable openhd-sys-utils.service openhd.service qopenhd.service \
-    openhd-grow-root.service openhd-installer.service NetworkManager.service
+    openhd-grow-root.service NetworkManager.service
 mkdir -p "$root/etc/openhd"
 chroot "$root" systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
 chroot "$root" systemctl set-default multi-user.target
@@ -112,7 +115,7 @@ ln -sfn /Config "$root/config"
 ln -sfn /Config "$root/conf"
 mkdir -p "$root/usr/local/share/OpenHD/SysUtils"
 printf '{"run_mode":"ground","firstboot":true,"debug":false}\n' >"$root/usr/local/share/OpenHD/SysUtils/config.json"
-printf 'COMPRESS=zstd\nMODULES=most\n' >"$root/etc/initramfs-tools/conf.d/openhd"
+printf 'COMPRESS=zstd\nMODULES=most\nFRAMEBUFFER=y\n' >"$root/etc/initramfs-tools/conf.d/openhd"
 grep -qx btrfs "$root/etc/initramfs-tools/modules" || echo btrfs >>"$root/etc/initramfs-tools/modules"
 install -m755 "$here/../additionalFiles/prepare-devourer-image.sh" "$root/tmp/prepare-devourer-image.sh"
 sed -i 's/\r$//' "$root/tmp/prepare-devourer-image.sh"

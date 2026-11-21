@@ -1,0 +1,15 @@
+#!/bin/sh
+# Queue the next unit asynchronously so this unit can finish freeing its VT.
+set -eu
+case "${1:-}" in
+    flight)
+        if [ "${EXIT_CODE:-}" = exited ] && [ "${EXIT_STATUS:-}" = 42 ]; then
+            systemctl --no-block start openhd-switch-desktop.service
+        fi
+        ;;
+    installer)
+        if [ -f /run/openhd-view/installer-return ]; then
+            systemctl --no-block start openhd-return-from-installer.service
+        fi
+        ;;
+esac

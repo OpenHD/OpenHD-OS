@@ -109,10 +109,6 @@ chroot "$mountpoint" grub-install --target=x86_64-efi --uefi-secure-boot --efi-d
 chroot "$mountpoint" grub-install --target=i386-efi --modules='all_video gfxterm gfxmenu png font' --no-uefi-secure-boot --efi-directory=/boot/efi --removable --no-nvram
 chroot "$mountpoint" grub-install --target=i386-pc --modules='all_video gfxterm gfxmenu png font' "$target"
 chroot "$mountpoint" update-grub
-if [[ "$profile" == desktop ]]; then
-    sed -i 's/^GRUB_DEFAULT=.*/GRUB_DEFAULT=openhd-desktop/' "$mountpoint/etc/default/grub"
-    chroot "$mountpoint" update-grub
-fi
 touch "$mountpoint/etc/openhd/root-expanded"
 echo 'OPENHD_PROGRESS 95 Finishing disk writes'
 sync

@@ -47,6 +47,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mmdebstrap rsync gnupg curl
           git -C sources/QOpenHD apply ../../patches/qopenhd-debian-x86.patch
+          git -C sources/QOpenHD apply ../../patches/qopenhd-session-switch.patch
           git -C sources/OpenHD-SysUtils apply ../../patches/sysutils-config-mount.patch
           python3 debian-x86/export-sources.py sources sources.tar.gz
           sudo bash debian-x86/bootstrap-builder.sh /opt/openhd-os-work sources.tar.gz

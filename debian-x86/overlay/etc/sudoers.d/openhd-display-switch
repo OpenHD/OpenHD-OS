@@ -1,0 +1,1 @@
+openhd ALL=(root) NOPASSWD: /usr/local/sbin/openhd-switch-session flight, /usr/local/sbin/openhd-switch-session install

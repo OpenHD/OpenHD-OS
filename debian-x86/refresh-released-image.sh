@@ -27,6 +27,10 @@ rsync -aHAXx --numeric-ids "$source_mount/" "$work/root/"
 cleanup_source
 trap - EXIT
 rm -f "$work/base/openhd-os-x86.img"
+if ! grep -aqF QOPENHD_SESSION_SWITCH "$work/root/usr/local/bin/QOpenHD"; then
+    echo 'This base release predates display switching. Build a fresh desktop image from the source workflow.' >&2
+    exit 1
+fi
 
 # A small, separate Debian tool environment supplies image/VM tools and the GUI
 # compiler. These development packages never enter the installed system.

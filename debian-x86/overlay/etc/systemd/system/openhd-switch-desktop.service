@@ -1,0 +1,7 @@
+[Unit]
+Description=Show the OpenHD desktop after QOpenHD releases the display
+After=qopenhd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/openhd-switch-session desktop

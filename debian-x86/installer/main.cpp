@@ -161,9 +161,10 @@ public:
         QScroller::grabGesture(scroll->viewport(), QScroller::TouchGesture);
         outer->addWidget(scroll, 1);
 
-        auto *welcome = page("Welcome to OpenHD OS", "Run QOpenHD from this USB drive, or install OpenHD OS on this computer.");
+        const bool fromSession = QCoreApplication::arguments().contains("--from-session");
+        auto *welcome = page("Welcome to OpenHD OS", "Run OpenHD OS from this USB drive, or install it on this computer.");
         welcome->addStretch();
-        button(welcome, "Start QOpenHD", [] { QApplication::quit(); });
+        button(welcome, fromSession ? "Return to OpenHD" : "Start QOpenHD", [] { QApplication::quit(); });
         button(welcome, "Install OpenHD OS", [this] { pages->setCurrentIndex(1); scan(); }, true);
         welcome->addWidget(label("Installation works offline. Your OpenHD configuration will be copied to the installed system."));
 
@@ -289,7 +290,11 @@ public:
             QProgressBar::chunk { background:#2385a3; border-radius:7px; }
             QTextEdit { font-size:13px; background:#0a1117; border:1px solid #405a6c; }
         )");
-        if (QFile::exists("/proc/cmdline")) {
+        if (fromSession) {
+            if (QFile::exists("/usr/bin/Hyprland")) profile = "desktop";
+            pages->setCurrentIndex(1);
+            QTimer::singleShot(0, this, [this] { scan(); });
+        } else if (QFile::exists("/proc/cmdline")) {
             QFile commandLine("/proc/cmdline");
             if (commandLine.open(QIODevice::ReadOnly)) {
                 const auto arguments = commandLine.readAll().trimmed().split(' ');

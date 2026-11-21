@@ -32,6 +32,7 @@ hl.bind("SUPER + Return", hl.dsp.exec_cmd("foot --config /usr/share/openhd/deskt
 hl.bind("SUPER + E", hl.dsp.exec_cmd("thunar"))
 hl.bind("SUPER + K", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action keyboard"))
 hl.bind("SUPER + N", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action network"))
+hl.bind("SUPER + Tab", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action flight"))
 hl.bind("SUPER + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind("SUPER + C", hl.dsp.window.close())
 hl.bind("SUPER + Escape", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action power"))

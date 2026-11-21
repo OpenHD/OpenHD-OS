@@ -27,7 +27,7 @@ else
     echo PREVIEW_FONT_FAILED
 fi
 set timeout=-1
-set default=openhd-minimal
+set default=openhd
 """ + menu + "\nterminal_output --append serial\necho PREVIEW_THEME=$theme\n")
 subprocess.run(["grub-mkrescue", "-o", str(work / "preview.iso"), str(tree)], check=True)
 qmp_path = work / "qmp.sock"

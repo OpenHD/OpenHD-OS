@@ -1,6 +1,6 @@
 [terminal]
-vt = 1
-switch = true
+vt = 2
+switch = false
 
 [general]
 source_profile = false

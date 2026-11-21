@@ -16,6 +16,9 @@ ShellRoot {
     property string activeMenu: ""
     property string hudTitle: ""
     property int hudLevel: -1
+    property real sessionCover: 1
+    property string switchTarget: ""
+    property bool leftDesktop: false
     readonly property var audio: Pipewire.defaultAudioSink?.audio ?? null
     readonly property var networkItem: SystemTray.items.values.find(item => /^nm[-_]applet$/.test(item.id)) ?? null
 
@@ -37,12 +40,75 @@ ShellRoot {
         hudTimeout.restart()
     }
 
+    function switchSession(target) {
+        if (switchTarget !== "" || sessionSwitch.running)
+            return
+        activeMenu = ""
+        leftDesktop = false
+        switchTarget = target
+        revealSession.stop()
+        coverSession.start()
+    }
+
+    function revealDesktop() {
+        switchTarget = ""
+        revealSession.restart()
+    }
+
+    FileView {
+        id: currentView
+        path: "/run/openhd-view/current"
+        printErrors: false
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            if (text().trim() !== "desktop")
+                shell.leftDesktop = true
+            else if (shell.switchTarget === "" || shell.leftDesktop)
+                shell.revealDesktop()
+        }
+    }
+    NumberAnimation {
+        id: coverSession
+        target: shell
+        property: "sessionCover"
+        to: 1
+        duration: 240
+        easing.type: Easing.InOutQuad
+        onFinished: switchDelay.start()
+    }
+    NumberAnimation {
+        id: revealSession
+        target: shell
+        property: "sessionCover"
+        to: 0
+        duration: 230
+        easing.type: Easing.OutQuad
+    }
+    Timer {
+        id: switchDelay
+        interval: 45
+        onTriggered: sessionSwitch.running = true
+    }
+    Process {
+        id: sessionSwitch
+        command: ["sudo", "-n", "/usr/local/sbin/openhd-switch-session", shell.switchTarget]
+        onExited: code => {
+            if (code !== 0) {
+                shell.revealDesktop()
+                shell.showHud("Could not switch view", -1)
+            }
+        }
+    }
+
     PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
 
     IpcHandler {
         target: "desktop"
         function power(): void { shell.toggleMenu("power") }
         function network(): void { shell.openNetwork() }
+        function flight(): void { shell.switchSession("flight") }
+        function install(): void { shell.switchSession("install") }
         function hud(title: string, level: int): void {
             shell.showHud(title, level)
         }
@@ -217,6 +283,11 @@ ShellRoot {
                 }
                 function launchApp(appId) {
                     if (!/^[a-z0-9-]+$/.test(appId)) return
+                    if (appId === "qopenhd") {
+                        search.clear()
+                        shell.switchSession("flight")
+                        return
+                    }
                     // Hyprland starts XWayland after the shell's startup hook.
                     // Dispatch here so X11 apps inherit the current display.
                     Quickshell.execDetached(["hyprctl", "dispatch",
@@ -354,6 +425,12 @@ ShellRoot {
                 Button {
                     visible: shell.activeMenu === "power"
                     Layout.fillWidth: true
+                    text: "Install OpenHD OS"
+                    onClicked: shell.switchSession("install")
+                }
+                Button {
+                    visible: shell.activeMenu === "power"
+                    Layout.fillWidth: true
                     text: "Restart"
                     onClicked: powerAction.run("reboot")
                 }
@@ -441,6 +518,18 @@ ShellRoot {
                     value: Math.min(100, shell.hudLevel)
                 }
             }
+        }
+    }
+
+    PanelWindow {
+        visible: shell.sessionCover > 0
+        anchors { top: true; bottom: true; left: true; right: true }
+        color: "transparent"
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.layer: WlrLayer.Overlay
+        SessionCurtain {
+            anchors.fill: parent
+            coverage: shell.sessionCover
         }
     }
 }

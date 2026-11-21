@@ -18,7 +18,7 @@ printf 'UUID=%s / btrfs defaults,compress-force=zstd:6,noatime 0 0\nUUID=%s /boo
 kernel=$(basename "$(find "$root/boot" -maxdepth 1 -name 'vmlinuz-*' | sort -V | tail -1)")
 version=${kernel#vmlinuz-}
 {
-    printf 'set timeout=1\nset default=openhd-minimal\nset menu_color_normal=cyan/black\nset menu_color_highlight=black/cyan\n'
+    printf 'set timeout_style=hidden\nset timeout=0\nset default=openhd\n'
     sh "$root/usr/local/sbin/openhd-grub-menu" "$root_uuid" "$kernel"
 } >"$root/boot/grub/grub.cfg"
 # GRUB expands these variables, not the builder shell.

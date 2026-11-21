@@ -1,0 +1,10 @@
+[Unit]
+Description=OpenHD desktop session
+After=systemd-user-sessions.service
+ConditionPathIsExecutable=/usr/bin/Hyprland
+Conflicts=getty@tty2.service autovt@tty2.service
+
+[Service]
+Type=exec
+ExecStart=/usr/sbin/greetd --config /etc/greetd/openhd.toml --vt 2
+TimeoutStopSec=10

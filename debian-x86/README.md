@@ -67,8 +67,8 @@ battery from the system's battery supply (hidden on desktops without one), and
 time from the system clock. Quickshell is installed from Debian 13 backports.
 Configuration is in `overlay/usr/share/openhd/desktop-config/quickshell/shell.qml`;
 launcher entries are generated from installed app launchers into
-`/usr/share/openhd/launcher-apps.json`. Ctrl+Alt+F2 opens the maintenance console
-and Ctrl+Alt+F1 returns to the graphical session.
+`/usr/share/openhd/launcher-apps.json`. Ctrl+Alt+F3 opens the maintenance
+console. Ctrl+Alt+F2 returns to a running desktop session.
 
 - Click the network icon or press Super+N to open NetworkManager's connection menu.
 - Click the speaker icon for volume, mute, and the full sound settings.
@@ -149,24 +149,27 @@ Write the raw image to a USB drive using an image writer and boot the drive. Thi
 is already a persistent installation; unplugging it does not discard its changes.
 No internal disk is selected or modified during boot.
 
-GRUB waits one second and defaults directly to **Start QOpenHD in minimal mode**.
-Choose **Start OpenHD-OS** for the desktop, **Install OpenHD minimal** or
-**Install OpenHD-OS** for the graphical installer, or **Advanced** for compatible
-video and maintenance. The unified image includes both modes and is capped at
-2 GiB; a minimal-only build remains 1 GiB.
+GRUB boots directly into direct-KMS QOpenHD with no visible menu. Press the
+Windows key or tap **Desktop** in QOpenHD to start or return to the desktop.
+Click the **QOpenHD** tile or press **Super+Tab** to return to the flight view.
+Open desktop applications stay running, while the QOpenHD display frontend
+restarts to reacquire KMS. The OpenHD receiver service stays running.
+
+Open the desktop's OpenHD logo menu and select **Install OpenHD OS**. On the
+1 GiB minimal image, the Windows key or **Install** button in QOpenHD opens the
+same wizard directly. The unified image is capped at 2 GiB.
 No terminal commands are required. The wizard lists disk model, size and serial,
 disables disks in use, and shows the selected disk again before erasing it.
 Two explicit acknowledgements enable the final **Erase disk and install** button.
 Progress, errors and restart/shutdown controls stay in the GUI.
 
-Installation works offline and copies the current OpenHD configuration. Minimal
-installation defaults to QOpenHD; desktop installation defaults to OpenHD-OS.
-Both modes remain accessible from the boot menu. The GUI uses the existing Qt
-runtime, so it can also run in a minimal-only image.
+Installation works offline, copies the current OpenHD configuration and boots
+into QOpenHD from the installed drive. The desktop is included when the running
+USB image includes it.
 
-Use Ctrl+Alt+F2 for the local root maintenance console, and Ctrl+Alt+F1 to return
-to QOpenHD. Getty and automatic login activation are masked on tty1, and kernel
-messages use tty3, keeping QOpenHD free of console text.
+Use Ctrl+Alt+F3 for the local maintenance console. Getty is masked on both
+graphical terminals, and kernel and system diagnostics use tty3. Plymouth is
+configured to use the firmware display early, and VT1 is cleared before QOpenHD.
 Remote root access is not enabled. For maintenance and automated validation, the
 same guarded installation backend remains available from this console:
 

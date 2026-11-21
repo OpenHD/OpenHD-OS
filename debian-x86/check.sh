@@ -16,11 +16,9 @@ if command -v luac >/dev/null; then luac -p "$here/overlay/usr/share/openhd/desk
 menu=$(mktemp)
 trap 'rm -f "$menu"' EXIT
 sh "$here/overlay/usr/local/sbin/openhd-grub-menu" test-root vmlinuz-test >"$menu"
-[[ $(grep -c '^menuentry\|^submenu' "$menu") == 7 ]]
+[[ $(grep -c '^menuentry\|^submenu' "$menu") == 4 ]]
 [[ $(grep -c '^submenu' "$menu") == 1 ]]
-grep -q "menuentry 'Start QOpenHD in minimal mode'" "$menu"
-grep -q "menuentry 'Start OpenHD-OS'" "$menu"
-grep -q "menuentry 'Install OpenHD minimal'" "$menu"
-grep -q "menuentry 'Install OpenHD-OS'" "$menu"
+grep -q "menuentry 'OpenHD' --id 'openhd'" "$menu"
+! grep -Eq 'openhd\.install|openhd\.mode=desktop|terminal_output gfxterm' "$menu"
 grep -q "submenu 'Advanced options'" "$menu"
 echo 'PASS: shell, Python and GRUB menu checks'

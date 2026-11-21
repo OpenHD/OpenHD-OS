@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Install OpenHD OS
+Exec=/usr/local/sbin/openhd-shell-action install
+Icon=system-software-install
+Categories=System;
+Terminal=false

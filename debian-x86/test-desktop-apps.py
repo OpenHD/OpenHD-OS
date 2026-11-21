@@ -35,7 +35,7 @@ class RootGuest(smoke.Guest):
         if mode == "direct":
             args += ["-kernel", "/work/root/boot/" + kernel,
                      "-initrd", "/work/root/boot/initrd.img-" + kernel.removeprefix("vmlinuz-"),
-                     "-append", f"root=UUID={root_uuid} rw rootflags=compress-force=zstd:6 console=ttyS0,115200 openhd.mode=desktop init=/bin/bash"]
+                     "-append", f"root=UUID={root_uuid} rw rootflags=compress-force=zstd:6 console=ttyS0,115200 init=/bin/bash"]
         else:
             shutil.copyfile(self.builder / "usr/share/OVMF/OVMF_VARS_4M.ms.fd", self.test / "OVMF_VARS.fd")
             args += ["-drive", "file=/output/efi.img,if=virtio,format=raw,readonly=on",
@@ -67,6 +67,9 @@ def main():
         guest.serial.sendall(b"exec /sbin/init\n")
         guest.read_until(rb"openhd login:")
         guest.ready()
+        guest.flight_ui()
+        guest.windows_key()
+        guest.wait_view("desktop", 2)
         guest.desktop_ui()
         launcher_apps = json.loads((work / "root/usr/share/openhd/launcher-apps.json").read_text())
         expected_launchers = ["qopenhd", "ardudeck", "kite-gc", "inav-configurator", "betaflight", "qgroundcontrol"]
@@ -76,7 +79,7 @@ def main():
             raise RuntimeError("A launcher entry has no installed icon or executable")
         guest.run("test $(pgrep -xc qs) = 1 && ! pgrep -x waybar && ! pgrep -x wofi")
         guest.run("mount -t tmpfs -o size=768M tmpfs /home/openhd; chown openhd:openhd /home/openhd")
-        for name in expected_launchers:
+        for name in expected_launchers[1:]:  # The QOpenHD tile is checked by the display-switch smoke test.
             log = f"/run/user/1000/openhd-test-{name}.log"
             pid = f"/run/user/1000/openhd-test-{name}.pid"
             launch = f"echo $$ > {pid}; exec /usr/local/sbin/openhd-desktop-app {name} > {log} 2>&1"

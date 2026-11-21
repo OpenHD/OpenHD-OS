@@ -11,6 +11,9 @@ case "${1:-}" in
     network)
         exec qs -p "$qs_config" ipc call desktop network
         ;;
+    flight|install)
+        exec qs -p "$qs_config" ipc call desktop "$1"
+        ;;
     volume-up|volume-down|volume-mute|brightness-up|brightness-down)
         action=$1
         # Serialize rapid key repeats so the readback matches the applied change.

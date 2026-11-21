@@ -1,18 +1,16 @@
 [Unit]
 Description=OpenHD OS graphical setup
 After=systemd-udev-settle.service plymouth-start.service openhd-grow-root.service
-Before=qopenhd.service
 RequiresMountsFor=/Config
 Wants=systemd-udev-settle.service
-ConditionKernelCommandLine=|openhd.install
-ConditionKernelCommandLine=|openhd.mode=desktop
 ConditionKernelCommandLine=!openhd.console
-Conflicts=getty@tty1.service autovt@tty1.service
+Conflicts=getty@tty1.service autovt@tty1.service qopenhd.service
 
 [Service]
-Type=oneshot
+Type=exec
 ExecStartPre=-/usr/bin/plymouth quit
-ExecStart=/usr/local/bin/openhd-installer
+ExecStart=/usr/local/bin/openhd-installer --from-session
+ExecStopPost=/usr/local/sbin/openhd-session-exited installer
 Environment=QT_QPA_PLATFORM=eglfs
 Environment=QT_QPA_EGLFS_INTEGRATION=eglfs_kms
 Environment=QT_QPA_EGLFS_KMS_ATOMIC=1
@@ -26,6 +24,3 @@ StandardError=journal
 TTYReset=yes
 TTYVHangup=yes
 TimeoutStartSec=infinity
-
-[Install]
-WantedBy=multi-user.target

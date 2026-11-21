@@ -1,11 +1,8 @@
-GRUB_DEFAULT=0
-GRUB_TIMEOUT=1
-GRUB_TIMEOUT_STYLE=menu
-GRUB_RECORDFAIL_TIMEOUT=1
+GRUB_DEFAULT=openhd
+GRUB_TIMEOUT=0
+GRUB_TIMEOUT_STYLE=hidden
+GRUB_RECORDFAIL_TIMEOUT=0
 GRUB_DISTRIBUTOR=OpenHD
-GRUB_CMDLINE_LINUX_DEFAULT="console=tty3 quiet splash loglevel=3 vt.global_cursor_default=0"
+GRUB_CMDLINE_LINUX_DEFAULT="console=tty3 quiet splash plymouth.use-simpledrm plymouth.ignore-serial-consoles loglevel=3 systemd.show_status=false rd.systemd.show_status=false logo.nologo vt.global_cursor_default=0"
 GRUB_CMDLINE_LINUX="rootflags=compress-force=zstd:6"
 GRUB_DISABLE_OS_PROBER=true
-GRUB_TERMINAL_OUTPUT=gfxterm
-GRUB_GFXMODE=auto
-GRUB_THEME=/usr/share/grub/themes/openhd/theme.txt

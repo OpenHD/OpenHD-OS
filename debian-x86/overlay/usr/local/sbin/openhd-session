@@ -1,8 +1,19 @@
 #!/bin/sh
 set -eu
-if grep -qw openhd.mode=desktop /proc/cmdline && [ -x /usr/bin/Hyprland ]; then
-    unset QT_QPA_PLATFORM QT_QPA_EGLFS_INTEGRATION QT_QPA_EGLFS_KMS_ATOMIC QOPENHD_X86_KMS QOPENHD_BOOT_ANIMATION
-    unset QT_QPA_PLATFORM XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS DISPLAY WAYLAND_DISPLAY
-    exec /usr/sbin/greetd --config /etc/greetd/openhd.toml --vt 1
+if [ -e /run/openhd-view/booted ]; then
+    export QOPENHD_SESSION_SWITCH=return
+else
+    mkdir -p /run/openhd-view
+    printf 'flight\n' >/run/openhd-view/current
+    touch /run/openhd-view/booted
+    export QOPENHD_SESSION_SWITCH=boot
 fi
+if [ -x /usr/bin/Hyprland ]; then
+    export QOPENHD_SESSION_LABEL=Desktop
+else
+    export QOPENHD_SESSION_LABEL=Install
+fi
+# VT1 is reserved for the appliance. Clear any cells left by firmware or a
+# failed splash without changing the KMS overlay's transparent background.
+printf '\033[0m\033[2J\033[3J\033[H\033[?25l' >/dev/tty1
 exec /usr/local/sbin/openhd-display

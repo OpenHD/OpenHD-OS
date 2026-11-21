@@ -113,6 +113,8 @@ class Guest:
         if not (self.test / "boot-animation.png").exists():
             self.screenshot("boot-animation")
         self.run("timeout 90 sh -c 'until journalctl -b -u qopenhd --no-pager | grep -Fq \"QOpenHD boot video: finished\"; do sleep 1; done'", timeout=100)
+        self.wait_view("flight", 1)
+        self.run("timeout 90 sh -c 'until journalctl -b -u qopenhd --no-pager | grep -Fq \"OpenHD flight view ready\"; do sleep 1; done'", timeout=100)
         self.run("systemctl is-active qopenhd openhd openhd-sys-utils NetworkManager")
         self.run("test $(systemctl show qopenhd -p NRestarts --value) = 0")
 
@@ -148,7 +150,8 @@ class Guest:
     def desktop_controls(self):
         session = (
             "session_bus=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p'); "
-            "runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=\"$session_bus\" "
+            "session_display=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | sed -n 's/^WAYLAND_DISPLAY=//p'); "
+            "runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=\"$session_bus\" WAYLAND_DISPLAY=\"$session_display\" "
         )
         control = "qs -p /usr/share/openhd/desktop-config/quickshell ipc"
         self.run(session + control + " show | grep -F 'target desktop'")
@@ -168,6 +171,32 @@ class Guest:
         # Check the visible feedback without depending on VM backlight support.
         self.run(session + control + " call desktop hud Brightness 65")
         self.screenshot("desktop-brightness-hud")
+
+    def desktop_action(self, action):
+        self.run(
+            "display=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | sed -n 's/^WAYLAND_DISPLAY=//p'); "
+            "runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=\"$display\" "
+            f"/usr/local/sbin/openhd-shell-action {action}"
+        )
+
+    def windows_key(self):
+        self.qmp_command("send-key", {"keys": [{"type": "qcode", "data": "meta_l"}], "hold-time": 120})
+
+    def wait_view(self, view, vt):
+        self.run(
+            f"timeout 50 sh -c 'until grep -qx {view} /run/openhd-view/current && "
+            f"grep -qx tty{vt} /sys/class/tty/tty0/active; do sleep 0.25; done'",
+            timeout=55,
+        )
+
+    def open_installer(self, desktop):
+        self.windows_key()
+        if desktop:
+            self.wait_view("desktop", 2)
+            self.desktop_ui()
+            self.desktop_action("install")
+        self.wait_view("installer", 1)
+        self.installer_page(1)
 
     def click(self, x, y):
         self.qmp_command("input-send-event", {"events": [
@@ -258,9 +287,9 @@ def main():
         guest.ready()
         guest.screenshot("early-boot")
         guest.flight_ui()
-        guest.run("grep -q '^set timeout=1$' /boot/grub/grub.cfg && grep -q \"menuentry 'Start QOpenHD in minimal mode'\" /boot/grub/grub.cfg && test ! -e /etc/openhd/usb-welcome")
+        guest.run("grep -q '^set timeout=0$' /boot/grub/grub.cfg && grep -q \"menuentry 'OpenHD'\" /boot/grub/grub.cfg && ! grep -q 'openhd.install' /boot/grub/grub.cfg")
         guest.run("test $(findmnt -n -o FSTYPE /) = btrfs && findmnt / && df -h /")
-        guest.run("test $(systemctl is-enabled getty@tty1.service) = masked && test $(systemctl is-enabled autovt@tty1.service) = masked && ! systemctl is-active --quiet getty@tty1.service && systemctl is-active --quiet getty@tty2.service")
+        guest.run("test $(systemctl is-enabled getty@tty1.service) = masked && test $(systemctl is-enabled autovt@tty1.service) = masked && ! systemctl is-active --quiet getty@tty1.service && systemctl is-active --quiet getty@tty3.service")
         guest.run("adb version")
         guest.run("test -f /etc/openhd/root-expanded && test $(blockdev --getsize64 /dev/vda4) -gt 1800000000")
         guest.run("test $(findmnt -n -o FSTYPE /Config) = vfat && test $(findmnt -n -o SOURCE /Config) = /dev/vda1 && test -f /Config/config.txt && test $(readlink /boot/openhd) = /Config/openhd")
@@ -269,20 +298,18 @@ def main():
         guest.run("apt-get update && apt-get install -y --no-install-recommends hello", timeout=180)
         guest.run("echo persistent-native-root > /etc/openhd/persistence-test; hello")
         guest.screenshot("usb-qopenhd")
-        guest.run("sed -i 's/set default=openhd-minimal/set default=openhd-install-minimal/' /boot/grub/grub.cfg")
-        guest.run("sed -i 's/set timeout=1$/set timeout=45/' /boot/grub/grub.cfg")
         guest.shutdown()
         print("PASS: native writable root, APT install and QOpenHD services", flush=True)
         guest.start("bios")
-        time.sleep(12)
-        guest.screenshot("graphical-boot-menu")
         guest.ready()
+        guest.flight_ui()
+        desktop = "DESKTOP_AVAILABLE" in guest.run("test ! -x /usr/bin/Hyprland || echo DESKTOP_AVAILABLE")
+        guest.open_installer(desktop)
+        guest.screenshot("installer-from-session")
         guest.run("openhd-install --target /dev/vda --dry-run", expected=1)
         guest.run("openhd-install --target /dev/vdb --dry-run")
         guest.gui_install()
-        guest.flight_ui()
-        guest.run("sed -i 's/set default=openhd-install-minimal/set default=openhd-minimal/' /boot/grub/grub.cfg")
-        guest.run("sed -i 's/set timeout=45$/set timeout=1/' /boot/grub/grub.cfg")
+        guest.wait_view("desktop" if desktop else "flight", 2 if desktop else 1)
         guest.run("grep -q persistent-native-root /etc/openhd/persistence-test && hello")
         guest.run("test ! -e /Config/openhd/settings.json && grep -Eq '\"debug\"[[:space:]]*:[[:space:]]*true' /usr/local/share/OpenHD/SysUtils/config.json && grep -q imagewriter-config-persistent /Config/imagewriter-test.txt")
         guest.run("grep -q imagewriter_import_test=true /root/.config/OpenHD/QOpenHD.conf && test -s /etc/openhd/qopenhd-import.sha256")
@@ -309,32 +336,25 @@ def main():
         guest.run("journalctl -b -u qopenhd --no-pager -n 60")
         guest.screenshot("installed-qopenhd")
         guest.run("test ! -e /etc/openhd/usb-welcome")
-        guest.run("sed -i 's/set default=\"0\"/set default=\"openhd-install-minimal\"/' /boot/grub/grub.cfg; grep -q 'set default=\"openhd-install-minimal\"' /boot/grub/grub.cfg")
-        guest.shutdown()
         print("PASS: installed disk boots through x64 UEFI with the USB absent", flush=True)
-        guest.start("uefi", installed=True)
-        guest.ready()
-        guest.run("grep -qw openhd.install /proc/cmdline")
-        guest.installer_page(1)
-        guest.screenshot("grub-installer")
-        guest.click(640, 750)  # Back to welcome, with no terminal interaction.
-        guest.click(640, 654)  # Start QOpenHD.
-        guest.flight_ui()
-        desktop = "DESKTOP_AVAILABLE" in guest.run("test ! -x /usr/bin/Hyprland || echo DESKTOP_AVAILABLE")
         if desktop:
-            guest.run("sed -i 's/set default=\"openhd-install-minimal\"/set default=\"openhd-desktop\"/' /boot/grub/grub.cfg")
-        guest.shutdown()
-        print("PASS: GRUB installer entry opens the graphical wizard on the installed system", flush=True)
-        if desktop:
-            guest.start("uefi", installed=True)
-            guest.ready()
-            guest.run("grep -qw openhd.mode=desktop /proc/cmdline")
-            guest.run("timeout 90 sh -c 'until pgrep -x Hyprland; do sleep 1; done'", timeout=100)
+            guest.windows_key()
+            guest.wait_view("desktop", 2)
             guest.desktop_ui()
             guest.desktop_controls()
-            guest.run("systemctl is-active qopenhd openhd openhd-sys-utils")
+            guest.run("pgrep -x Hyprland >/run/desktop-before-switch; systemctl is-active openhd openhd-sys-utils")
+            guest.desktop_action("flight")
+            guest.wait_view("flight", 1)
+            guest.run("timeout 40 sh -c 'until [ \"$(journalctl -b -u qopenhd --no-pager | grep -Fc \"OpenHD flight view ready\")\" -ge 2 ]; do sleep 1; done'", timeout=45)
+            guest.screenshot("flight-after-desktop")
+            guest.windows_key()
+            guest.wait_view("desktop", 2)
+            guest.run("pgrep -x Hyprland | cmp - /run/desktop-before-switch; systemctl is-active openhd openhd-sys-utils")
+            guest.screenshot("desktop-after-flight")
             guest.shutdown(allow_forced_exit=True)
-            print("PASS: unified image boots Hyprland desktop and minimal QOpenHD from the same installation", flush=True)
+            print("PASS: Windows key switches both ways without restarting Hyprland", flush=True)
+        else:
+            guest.shutdown()
     except Exception:
         if guest.process and guest.process.poll() is None:
             try:
