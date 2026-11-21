@@ -88,7 +88,7 @@ index 5049189..ccf5fcd 100644
      property bool hudPresented: false
      property int heldFrameCount: 0
      property int preparedHudFrameCount: 0
-@@ -36,7 +45,66 @@ Window {
+@@ -36,7 +45,74 @@ Window {
          }
      }
      function loadFlightUi() {
@@ -148,6 +148,14 @@ index 5049189..ccf5fcd 100644
 +        to: 0
 +        duration: 230
 +        easing.type: Easing.OutQuad
++    }
++    // Some KMS/software-renderer combinations do not emit frameSwapped reliably.
++    // hudReady means the HUD is constructed; reveal it after a short fallback.
++    Timer {
++        interval: 1500
++        running: startupWindow.videoFinished && startupWindow.hudReady && !startupWindow.hudPresented
++        repeat: false
++        onTriggered: startupWindow.hudPresented = true
 +    }
 +    Timer {
 +        id: switchDelay
