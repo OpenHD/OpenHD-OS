@@ -5,6 +5,9 @@ on:
       output:
         type: string
         default: desktop-image
+      release_metadata:
+        type: boolean
+        default: false
       openhd_ref:
         type: string
         default: openhd-3.0
@@ -18,8 +21,8 @@ on:
     inputs:
       output:
         type: choice
-        options: [packages, minimal-image, desktop-image]
-        default: packages
+        options: [minimal-image, desktop-image, synced-images, packages]
+        default: synced-images
       openhd_ref:
         default: openhd-3.0
       qopenhd_ref:
@@ -34,6 +37,9 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
       - uses: actions/checkout@v4
         with:
           repository: OpenHD/OpenHD
@@ -58,6 +64,9 @@ jobs:
           test -f sources/OpenHD/OpenHD/ohd_interface/lib/devourer/CMakeLists.txt
       - name: Prepare Debian component sources
         run: |
+          for repo in OpenHD QOpenHD OpenHD-SysUtils; do
+            printf '%s %s\n' "$repo" "$(git -C "sources/$repo" rev-parse HEAD)"
+          done
           sudo apt-get update
           sudo apt-get install -y mmdebstrap rsync gnupg curl
           git -C sources/QOpenHD apply ../../patches/qopenhd-debian-x86.patch
@@ -69,38 +78,48 @@ jobs:
         if: inputs.output != 'packages'
         env:
           PROFILE: ${{ inputs.output }}
+          RELEASE_METADATA: ${{ inputs.release_metadata }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          sudo bash debian-x86/make-root.sh /opt/openhd-os-work
-          if [ "$PROFILE" = desktop-image ]; then
-            sudo env GITHUB_TOKEN="$GITHUB_TOKEN" bash debian-x86/add-desktop.sh /opt/openhd-os-work
-            sudo env IMAGE_BYTES=2147483648 bash debian-x86/assemble-and-test.sh /opt/openhd-os-work --test
-          else
-            sudo bash debian-x86/assemble-and-test.sh /opt/openhd-os-work --test
+          work=/opt/openhd-os-work
+          sudo bash debian-x86/make-root.sh "$work"
+          if [[ "$PROFILE" == minimal-image || "$PROFILE" == synced-images ]]; then
+            sudo bash debian-x86/assemble-and-test.sh "$work" --test
+            sudo mv "$work/output" "$work/minimal-output"
           fi
+          if [[ "$PROFILE" == desktop-image || "$PROFILE" == synced-images ]]; then
+            sudo env GITHUB_TOKEN="$GITHUB_TOKEN" bash debian-x86/add-desktop.sh "$work"
+            jq -r '.apps[] | "\(.id) \(.version)"' "$work/desktop-apps.lock.json"
+            sudo env IMAGE_BYTES=2147483648 bash debian-x86/assemble-and-test.sh "$work" --test
+          fi
+          if [[ "$PROFILE" == desktop-image && "$RELEASE_METADATA" == true ]]; then
+            sudo cp "$work/desktop-apps.lock.json" "$work/output/"
+          fi
+      - name: Show VM diagnostics
+        if: failure() && inputs.output != 'packages'
+        run: |
+          for log in /opt/openhd-os-work/output/vm-test/{qemu.log,serial.log}; do
+            if [[ -f "$log" ]]; then sudo tail -n 120 "$log"; fi
+          done
       - uses: actions/upload-artifact@v4
+        if: inputs.output == 'packages'
         with:
           name: debian-amd64-packages
           path: /opt/openhd-os-work/builder/packages/*.deb
       - uses: actions/upload-artifact@v4
-        if: always() && inputs.output != 'packages'
+        if: inputs.output == 'minimal-image' || inputs.output == 'synced-images'
         with:
-          name: ${{ inputs.output }}
-          path: |
-            /opt/openhd-os-work/output/*.img
-            /opt/openhd-os-work/output/SHA256SUMS
-            /opt/openhd-os-work/output/*report.txt
-            /opt/openhd-os-work/output/vm-test/*.png
-            /opt/openhd-os-work/output/vm-test/failure-diagnostics.txt
-            /opt/openhd-os-work/output/packages.tsv
-            /opt/openhd-os-work/desktop-apps.lock.json
+          name: minimal-image
+          path: /opt/openhd-os-work/minimal-output/openhd-debian-x86-minimal.img
+          if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v4
-        if: always() && inputs.output == 'desktop-image'
+        if: inputs.output == 'desktop-image'
         with:
-          name: desktop-preview
+          name: desktop-image
           path: |
-            /opt/openhd-os-work/output/vm-test/*.png
-            /opt/openhd-os-work/output/vm-test/*.log
-            /opt/openhd-os-work/output/vm-test/failure-diagnostics.txt
+            /opt/openhd-os-work/output/openhd-debian-x86-minimal.img
+            ${{ inputs.release_metadata && '/opt/openhd-os-work/output/SHA256SUMS' || '' }}
+            ${{ inputs.release_metadata && '/opt/openhd-os-work/desktop-apps.lock.json' || '' }}
+          if-no-files-found: error
           retention-days: 7

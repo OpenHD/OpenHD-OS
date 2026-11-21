@@ -15,7 +15,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 debian-x86/desktop-apps.py --lock debian-x86/desktop-apps.lock.json
-      - name: Record changes and request a fresh desktop image
+      - name: Record changes and request a fresh x86 build
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -26,5 +26,5 @@ jobs:
             git add debian-x86/desktop-apps.lock.json
             git commit -m 'Track latest stable flight desktop applications'
             git push
-            gh workflow run refresh-image.yml --ref main
+            gh workflow run build.yml --ref main -f output=synced-images
           fi

@@ -19,6 +19,7 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       output: desktop-image
+      release_metadata: ${{ inputs.release_tag != '' }}
   image:
     if: inputs.base_tag != ''
     runs-on: ubuntu-24.04
