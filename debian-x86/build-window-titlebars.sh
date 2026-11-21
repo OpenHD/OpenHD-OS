@@ -37,7 +37,7 @@ chroot "$builder" strip --strip-unneeded "$guest_dir/hyprbars/hyprbars.so"
 package="$source_dir/package"
 install -Dm644 "$source_dir/hyprbars/hyprbars.so" "$package/usr/lib/openhd/hyprbars.so"
 install -Dm644 "$source_dir/LICENSE" "$package/usr/share/doc/openhd-window-titlebars/copyright"
-mkdir -p "$package/DEBIAN"
+install -d -m755 "$package" "$package/DEBIAN"
 cat >"$package/DEBIAN/control" <<EOF
 Package: openhd-window-titlebars
 Version: $version
@@ -46,6 +46,7 @@ Maintainer: OpenHD <developers@openhd.org>
 Depends: hyprland (= $version)
 Description: OpenHD desktop window title bars
 EOF
+chmod 0644 "$package/DEBIAN/control"
 dpkg-deb --root-owner-group --build "$package" "$root/tmp/openhd-window-titlebars.deb"
 chroot "$root" dpkg -i /tmp/openhd-window-titlebars.deb
 rm -f "$root/tmp/openhd-window-titlebars.deb"
