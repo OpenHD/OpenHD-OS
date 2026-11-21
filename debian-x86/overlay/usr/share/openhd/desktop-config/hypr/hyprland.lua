@@ -14,7 +14,7 @@ if hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
         on_double_click = maximize,
     } } })
     hl.plugin.hyprbars.add_button({
-        bg_color = "rgba(721c3338)", fg_color = "rgb(ff556d)", size = 36, icon = "×",
+        bg_color = "rgba(00000000)", fg_color = "rgb(ffffff)", size = 36, icon = "×",
         action = [[hyprctl dispatch 'hl.dsp.window.close()']],
     })
     hl.plugin.hyprbars.add_button({
