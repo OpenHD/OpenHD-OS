@@ -4,7 +4,7 @@ set -euo pipefail
 work=$(realpath "${1:?Usage: build-window-titlebars.sh WORKDIR}")
 root="$work/root"
 builder="$work/builder"
-version=$(chroot "$root" dpkg-query -W -f='${Version}' hyprland)
+version=$(chroot "$root" dpkg-query -W -f="\${Version}" hyprland)
 plugin_commit=90e66baf99c9025b1d5e9c9e58dd3c80d0911ea2 # v0.55.0
 source_dir=$(mktemp -d "$builder/tmp/openhd-hyprbars.XXXXXX")
 trap 'rm -rf "$source_dir"' EXIT
