@@ -198,37 +198,37 @@ class Guest:
             timeout=55,
         )
 
-    def open_installer(self, desktop):
+    def open_installer(self):
         self.view_shortcut()
-        if desktop:
-            self.wait_view("desktop", 2)
-            self.desktop_ui()
-            self.run("dpkg-query -W hyprland-guiutils && runuser -u openhd -- sudo -n -l /usr/local/sbin/openhd-switch-session flight && runuser -u openhd -- sudo -n -l /usr/local/sbin/openhd-switch-session install")
-            hyprctl = (
-                "signature=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | "
-                "sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p'); "
-                'runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 HYPRLAND_INSTANCE_SIGNATURE="$signature" hyprctl '
-            )
-            config = self.run(hyprctl + "configerrors")
-            if "Config error" in config:
-                raise RuntimeError("Hyprland configuration errors:\n" + config)
-            self.run(hyprctl + "plugin list | grep -qi hyprbars")
-            self.run("runuser -u openhd -- sudo -n id -u | grep -qx 0")
-            permissions = "/run/user/1000/openhd-nm-permissions"
-            query = f"hl.exec_cmd('nmcli -t -f PERMISSION,VALUE general permissions >{permissions}')"
-            self.run(hyprctl + "eval " + shlex.quote(query))
-            self.run("timeout 10 sh -c " + shlex.quote(
-                f"until grep -qx 'org.freedesktop.NetworkManager.settings.modify.system:yes' {permissions} 2>/dev/null; do sleep 0.25; done"
-            ))
-            self.click(640, 550)  # Kite GCS, center tile on the Albatross launcher.
-            self.run("timeout 10 sh -c 'until test -f /home/openhd/.local/state/openhd/apps/kite-gc.log; do sleep 0.25; done'")
-            self.run("timeout 35 sh -c " + shlex.quote("until " + hyprctl + "clients | grep -q '^Window '; do sleep 0.25; done"))
-            self.screenshot("kite-gc-from-launcher")
-            # Use the desktop command here so this test can verify the installer
-            # while Kite is running. Menu clicks are checked in desktop_controls.
-            self.run(hyprctl + "eval " + shlex.quote(
-                "hl.exec_cmd('/usr/local/sbin/openhd-shell-action install')"
-            ))
+        self.wait_view("desktop", 2)
+        self.desktop_ui()
+        self.run("dpkg-query -W hyprland-guiutils && runuser -u openhd -- sudo -n -l /usr/local/sbin/openhd-switch-session flight && runuser -u openhd -- sudo -n -l /usr/local/sbin/openhd-switch-session install")
+        hyprctl = (
+            "signature=$(tr '\\0' '\\n' < /proc/$(pgrep -x qs)/environ | "
+            "sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p'); "
+            'runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 HYPRLAND_INSTANCE_SIGNATURE="$signature" hyprctl '
+        )
+        config = self.run(hyprctl + "configerrors")
+        if "Config error" in config:
+            raise RuntimeError("Hyprland configuration errors:\n" + config)
+        self.run(hyprctl + "plugin list | grep -qi hyprbars")
+        self.run("runuser -u openhd -- sudo -n id -u | grep -qx 0")
+        permissions = "/run/user/1000/openhd-nm-permissions"
+        query = f"hl.exec_cmd('nmcli -t -f PERMISSION,VALUE general permissions >{permissions}')"
+        self.run(hyprctl + "eval " + shlex.quote(query))
+        self.run("timeout 10 sh -c " + shlex.quote(
+            f"until grep -qx 'org.freedesktop.NetworkManager.settings.modify.system:yes' {permissions} 2>/dev/null; do sleep 0.25; done"
+        ))
+        self.click(640, 550)  # Kite GCS, center tile on the Albatross launcher.
+        self.run("timeout 10 sh -c 'until test -f /home/openhd/.local/state/openhd/apps/kite-gc.log; do sleep 0.25; done'")
+        self.run("timeout 35 sh -c " + shlex.quote("until " + hyprctl + "clients | grep -q '^Window '; do sleep 0.25; done"))
+        self.screenshot("kite-gc-from-launcher")
+        self.send_shortcut("alt", "f4")
+        # Menu clicks are checked separately in desktop_controls.
+        self.run("pid=$(pgrep -nx -u openhd qs); "
+                 "display=$(tr '\\0' '\\n' </proc/$pid/environ | sed -n 's/^WAYLAND_DISPLAY=//p'); "
+                 "runuser -u openhd -- env XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=\"$display\" "
+                 "qs ipc --pid \"$pid\" call desktop install")
         self.wait_view("installer", 1)
         self.installer_page(1)
 
@@ -344,9 +344,8 @@ def main():
         guest.start("bios")
         guest.ready()
         guest.flight_ui()
-        desktop = bool(re.search(r"(?m)^DESKTOP_AVAILABLE\r?$",
-                                 guest.run("test ! -x /usr/bin/Hyprland || echo DESKTOP_AVAILABLE")))
-        guest.open_installer(desktop)
+        guest.run("test -x /usr/bin/Hyprland")
+        guest.open_installer()
         guest.screenshot("installer-from-session")
         # SysUtils can request a QOpenHD start while the wizard owns VT1.
         guest.run("systemctl start qopenhd && systemctl is-active --quiet openhd-installer "
@@ -354,7 +353,7 @@ def main():
         guest.run("openhd-install --target /dev/vda --dry-run", expected=1)
         guest.run("openhd-install --target /dev/vdb --dry-run")
         guest.gui_install()
-        guest.wait_view("desktop" if desktop else "flight", 2 if desktop else 1)
+        guest.wait_view("desktop", 2)
         guest.run("grep -q persistent-native-root /etc/openhd/persistence-test && hello")
         guest.run("test ! -e /Config/openhd/settings.json && grep -Eq '\"debug\"[[:space:]]*:[[:space:]]*true' /usr/local/share/OpenHD/SysUtils/config.json && grep -q imagewriter-config-persistent /Config/imagewriter-test.txt")
         guest.run("grep -q imagewriter_import_test=true /root/.config/OpenHD/QOpenHD.conf && test -s /etc/openhd/qopenhd-import.sha256")
@@ -382,29 +381,26 @@ def main():
         guest.screenshot("installed-qopenhd")
         guest.run("test ! -e /etc/openhd/usb-welcome")
         print("PASS: installed disk boots through x64 UEFI with the USB absent", flush=True)
-        if desktop:
-            guest.view_shortcut()
-            guest.wait_view("desktop", 2)
-            guest.desktop_ui()
-            guest.desktop_controls()
-            guest.run("pgrep -x Hyprland >/run/desktop-before-switch; systemctl is-active openhd openhd-sys-utils")
-            guest.send_shortcut("ctrl", "alt", "delete")
-            guest.run("timeout 15 sh -c 'until pgrep -fu openhd \"(^|/)gnome-system-monitor([[:space:]]|$)\"; do sleep 0.25; done'")
-            guest.run("pid=$(pgrep -fu openhd '^/usr/bin/gnome-system-monitor([[:space:]]|$)') && "
-                      "tr '\\0' '\\n' </proc/\"$pid\"/environ | grep -Eq '^XDG_CONFIG_HOME=.*/openhd/task-manager$'")
-            guest.screenshot("task-manager")
-            guest.view_shortcut()
-            guest.wait_view("flight", 1)
-            guest.run("timeout 40 sh -c 'until [ \"$(journalctl -b -u qopenhd --no-pager | grep -Fc \"OpenHD flight view ready\")\" -ge 2 ]; do sleep 1; done'", timeout=45)
-            guest.screenshot("flight-after-desktop")
-            guest.view_shortcut()
-            guest.wait_view("desktop", 2)
-            guest.run("pgrep -x Hyprland | cmp - /run/desktop-before-switch; systemctl is-active openhd openhd-sys-utils")
-            guest.screenshot("desktop-after-flight")
-            guest.shutdown()
-            print("PASS: Win+Tab switches both ways without restarting Hyprland", flush=True)
-        else:
-            guest.shutdown()
+        guest.view_shortcut()
+        guest.wait_view("desktop", 2)
+        guest.desktop_ui()
+        guest.desktop_controls()
+        guest.run("pgrep -x Hyprland >/run/desktop-before-switch; systemctl is-active openhd openhd-sys-utils")
+        guest.send_shortcut("ctrl", "alt", "delete")
+        guest.run("timeout 15 sh -c 'until pgrep -fu openhd \"(^|/)gnome-system-monitor([[:space:]]|$)\"; do sleep 0.25; done'")
+        guest.run("pid=$(pgrep -fu openhd '^/usr/bin/gnome-system-monitor([[:space:]]|$)') && "
+                  "tr '\\0' '\\n' </proc/\"$pid\"/environ | grep -Eq '^XDG_CONFIG_HOME=.*/openhd/task-manager$'")
+        guest.screenshot("task-manager")
+        guest.view_shortcut()
+        guest.wait_view("flight", 1)
+        guest.run("timeout 40 sh -c 'until [ \"$(journalctl -b -u qopenhd --no-pager | grep -Fc \"OpenHD flight view ready\")\" -ge 2 ]; do sleep 1; done'", timeout=45)
+        guest.screenshot("flight-after-desktop")
+        guest.view_shortcut()
+        guest.wait_view("desktop", 2)
+        guest.run("pgrep -x Hyprland | cmp - /run/desktop-before-switch; systemctl is-active openhd openhd-sys-utils")
+        guest.screenshot("desktop-after-flight")
+        guest.shutdown()
+        print("PASS: Win+Tab switches both ways without restarting Hyprland", flush=True)
     except Exception:
         if guest.process and guest.process.poll() is None:
             try:
