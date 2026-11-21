@@ -145,6 +145,7 @@ def main():
             "kite-gc": "/usr/share/openhd/brand/apps/kitegc.svg",
             "inav-configurator": "/usr/share/openhd/brand/apps/inav.png",
             "betaflight": "/usr/share/openhd/brand/apps/betaflight.svg",
+            "terminal": "/usr/share/openhd/brand/apps/terminal.svg",
         }
         for icon in brand_icons.values():
             relative = icon.lstrip("/")
@@ -163,6 +164,13 @@ def main():
         launcher_ids = [app["id"] for app in launcher_apps]
         if launcher_ids[:len(required_launchers)] != required_launchers or launcher_ids[len(required_launchers):] not in ([], ["qgroundcontrol"]):
             raise RuntimeError("OpenHD launcher catalog mismatch; expected " + repr(required_launchers) + ", generated " + repr(launcher_ids) + "; available app IDs: " + repr(sorted(installed_by_id)))
+        launcher_apps.append({
+            "id": "terminal",
+            "name": "Terminal",
+            "icon": brand_icons["terminal"],
+            "exec": ["foot", "--config", "/usr/share/openhd/desktop-config/foot/foot.ini"],
+            "searchOnly": True,
+        })
         manifest = root / "usr/share/openhd/desktop-apps.json"
         manifest.parent.mkdir(parents=True, exist_ok=True)
         manifest.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")

@@ -59,7 +59,7 @@ hl.config({
 })
 hl.curve("openhdEase", { type = "bezier", points = {{0.16, 1}, {0.3, 1}} })
 hl.animation({ leaf = "global", enabled = true, speed = 5, bezier = "openhdEase" })
-hl.bind("SUPER + Return", hl.dsp.exec_cmd("foot --config /usr/share/openhd/desktop-config/foot/foot.ini"))
+hl.bind("SUPER + Return", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action run-app terminal"))
 hl.bind("SUPER + E", hl.dsp.exec_cmd("thunar"))
 hl.bind("SUPER + K", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action keyboard"))
 hl.bind("SUPER + N", hl.dsp.exec_cmd("/usr/local/sbin/openhd-shell-action network"))

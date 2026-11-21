@@ -6,11 +6,10 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Services.Pipewire
-import Quickshell.Services.SystemTray
+import Quickshell.Networking
 
 ShellRoot {
     id: shell
-    property string networkState: "Checking"
     property string batteryState: ""
     property string clockText: Qt.formatDateTime(new Date(), "HH:mm")
     property string activeMenu: ""
@@ -20,9 +19,11 @@ ShellRoot {
     property string switchTarget: ""
     property bool leftDesktop: false
     readonly property var audio: Pipewire.defaultAudioSink?.audio ?? null
-    readonly property var networkItem: SystemTray.items.values.find(item =>
-        /nm[-_ ]?tray|networkmanager/i.test(item.id + " " + item.title)
-    ) ?? null
+    readonly property var wifiDevices: Networking.devices.values.filter(
+        device => device.type === DeviceType.Wifi && device.nmManaged)
+    readonly property var wiredConnection: Networking.devices.values.find(
+        device => device.type === DeviceType.Wired && device.connected)
+    readonly property bool wifiConnected: wifiDevices.some(device => device.connected)
 
     readonly property var minimizedWindows: Hyprland.toplevels.values.filter(
         window => window.workspace?.name === "special:openhd-minimized"
@@ -43,19 +44,12 @@ ShellRoot {
     }
 
     function openNetwork() {
-        activeMenu = ""
-        if (networkItem && !networkItem.onlyMenu)
-            networkItem.activate()
-        else
-            openNetworkSettings()
+        toggleMenu("network")
     }
 
     function openNetworkSettings() {
         activeMenu = ""
-        if (networkItem?.hasMenu)
-            networkMenu.open()
-        else
-            Quickshell.execDetached(["nm-connection-editor"])
+        Quickshell.execDetached(["nm-connection-editor"])
     }
 
     function showHud(title, level) {
@@ -149,8 +143,8 @@ ShellRoot {
     }
 
     Timer { interval: 30000; running: true; repeat: true; onTriggered: shell.clockText = Qt.formatDateTime(new Date(), "HH:mm") }
-    Timer { interval: 10000; running: true; repeat: true; onTriggered: { networkProbe.running = true; batteryProbe.running = true } }
-    Component.onCompleted: { networkProbe.running = true; batteryProbe.running = true }
+    Timer { interval: 10000; running: true; repeat: true; onTriggered: batteryProbe.running = true }
+    Component.onCompleted: batteryProbe.running = true
 
     PanelWindow {
         anchors { top: true; left: true; right: true; bottom: true }
@@ -161,12 +155,6 @@ ShellRoot {
         AlbatrossBackdrop { anchors.fill: parent }
     }
 
-    Process {
-        id: networkProbe
-        command: ["sh", "-c", "nmcli -t -f CONNECTIVITY general 2>/dev/null || true"]
-        stdout: StdioCollector { id: networkOutput }
-        onExited: (code) => { shell.networkState = code === 0 && networkOutput.text.trim() ? networkOutput.text.trim() : "Unavailable" }
-    }
     Process {
         id: batteryProbe
         command: ["sh", "-c", "for p in /sys/class/power_supply/*; do [ -r \"$p/type\" ] && [ \"$(cat \"$p/type\")\" = Battery ] && [ -r \"$p/capacity\" ] && { cat \"$p/capacity\"; exit 0; }; done; exit 1"]
@@ -189,6 +177,7 @@ ShellRoot {
             border.width: 1
             border.color: "#553d6885"
             RowLayout {
+                id: barContents
                 anchors.fill: parent
                 anchors.leftMargin: 20
                 anchors.rightMargin: 20
@@ -232,29 +221,21 @@ ShellRoot {
                     id: networkButton
                     Layout.preferredWidth: 42
                     Layout.fillHeight: true
-                    Accessible.name: "Network " + shell.networkState
+                    Accessible.name: shell.wifiConnected ? "Wi-Fi connected" :
+                                     shell.wiredConnection ? "Ethernet connected" : "Network controls"
                     onClicked: shell.openNetwork()
                     TapHandler {
                         acceptedButtons: Qt.RightButton
                         onTapped: shell.openNetworkSettings()
                     }
-                    background: Rectangle { radius: 8; color: networkButton.hovered ? "#294057" : "transparent" }
+                    background: Rectangle { radius: 8; color: networkButton.hovered || shell.activeMenu === "network" ? "#294057" : "transparent" }
                     contentItem: Text {
-                        visible: !networkIcon.visible
-                        text: "\uf1eb"
-                        color: shell.networkState === "full" || shell.networkState === "limited" ? "#e9f2fb" : "#718093"
+                        text: shell.wifiConnected || !shell.wiredConnection ? "\uf1eb" : "\uf0e8"
+                        color: shell.wifiConnected || shell.wiredConnection ? "#e9f2fb" : "#718093"
                         font.family: "FontAwesome"
                         font.pixelSize: 16
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
-                    }
-                    Image {
-                        id: networkIcon
-                        anchors.centerIn: parent
-                        width: 20
-                        height: 20
-                        source: shell.networkItem?.icon ?? ""
-                        visible: status === Image.Ready
                     }
                 }
                 Button {
@@ -280,14 +261,6 @@ ShellRoot {
         }
     }
 
-    QsMenuAnchor {
-        id: networkMenu
-        menu: shell.networkItem?.menu ?? null
-        anchor.item: networkButton
-        anchor.edges: Edges.Bottom | Edges.Right
-        anchor.gravity: Edges.Bottom | Edges.Left
-    }
-
     PanelWindow {
         id: launcherWindow
         anchors { top: true; left: true; right: true; bottom: true }
@@ -309,7 +282,7 @@ ShellRoot {
                 id: launcher
                 property var appData: JSON.parse(appFile.text())
                 property var filteredApps: search.text.trim().length === 0
-                    ? appData.filter(app => app.id !== "qgroundcontrol")
+                    ? appData.filter(app => !app.searchOnly && app.id !== "qgroundcontrol")
                     : appData.filter(app => app.name.toLowerCase().includes(search.text.trim().toLowerCase()))
                 property int selectedIndex: 0
                 function moveSelection(direction) {
@@ -430,10 +403,10 @@ ShellRoot {
         }
     }
 
-    component PowerMenuRow: ItemDelegate {
+    component MenuRow: ItemDelegate {
         id: row
         required property string glyph
-        visible: shell.activeMenu === "power"
+        property string detail: ""
         Layout.fillWidth: true
         implicitHeight: 33
         leftPadding: 9
@@ -447,7 +420,7 @@ ShellRoot {
             spacing: 10
             Text {
                 text: row.glyph
-                color: "#a9bfd3"
+                color: row.enabled ? "#a9bfd3" : "#718093"
                 font.family: "FontAwesome"
                 font.pixelSize: 13
                 Layout.preferredWidth: 16
@@ -455,17 +428,272 @@ ShellRoot {
             }
             Text {
                 text: row.text
-                color: "#edf4fa"
+                color: row.enabled ? "#edf4fa" : "#8290a0"
                 font.family: "Inter"
                 font.pixelSize: 13
                 Layout.fillWidth: true
+                elide: Text.ElideRight
+            }
+            Text {
+                visible: row.detail !== ""
+                text: row.detail
+                color: "#a9bfd3"
+                font.family: "Inter"
+                font.pixelSize: 11
+            }
+        }
+    }
+
+    component MenuSeparator: Rectangle {
+        Layout.fillWidth: true
+        Layout.preferredHeight: 1
+        Layout.margins: 4
+        color: "#495567"
+    }
+
+    component NetworkMenu: ColumnLayout {
+        id: menu
+        spacing: 1
+        property var selectedNetwork: null
+        property bool showPassword: false
+        property string message: ""
+        readonly property bool canSubmitPassword: selectedNetwork != null &&
+            password.text.length >= (selectedNetwork.security === WifiSecurityType.Sae ? 1 : 8)
+        readonly property var networks: {
+            const entries = []
+            for (const device of shell.wifiDevices) {
+                if (device.mode === WifiDeviceMode.AccessPoint) continue
+                for (const network of device.networks.values) {
+                    if (network.name !== "") entries.push(network)
+                }
+            }
+            entries.sort((a, b) => Number(b.connected) - Number(a.connected) ||
+                                  b.signalStrength - a.signalStrength)
+            const seen = new Set()
+            return entries.filter(network => {
+                const key = JSON.stringify([network.name, network.security])
+                if (seen.has(key)) return false
+                seen.add(key)
+                return true
+            })
+        }
+
+        function supportsPassword(network) {
+            return [WifiSecurityType.WpaPsk, WifiSecurityType.Wpa2Psk, WifiSecurityType.Sae]
+                .includes(network.security)
+        }
+
+        function choose(network) {
+            selectedNetwork = network
+            showPassword = false
+            password.clear()
+            message = ""
+            if (network.connected)
+                network.disconnect()
+            else if (network.known || network.security === WifiSecurityType.Open ||
+                     network.security === WifiSecurityType.Owe)
+                network.connect()
+            else if (supportsPassword(network)) {
+                showPassword = true
+                password.forceActiveFocus()
+            } else
+                message = "Use Edit connections to configure this network."
+        }
+
+        function connectWithPassword() {
+            if (!showPassword || !canSubmitPassword)
+                return
+            const secret = password.text
+            password.clear()
+            showPassword = false
+            message = ""
+            selectedNetwork.connectWithPsk(secret)
+        }
+
+        onVisibleChanged: if (!visible) {
+            selectedNetwork = null
+            showPassword = false
+            message = ""
+            password?.clear()
+        }
+
+        Connections {
+            target: menu.selectedNetwork
+            function onConnectionFailed(reason) {
+                if (!menu.visible || !menu.selectedNetwork)
+                    return
+                menu.message = "Could not connect to " + menu.selectedNetwork.name
+                if (reason === ConnectionFailReason.NoSecrets && menu.supportsPassword(menu.selectedNetwork)) {
+                    menu.showPassword = true
+                    password.forceActiveFocus()
+                }
+            }
+        }
+
+        Repeater {
+            model: shell.wifiDevices
+            delegate: Item {
+                required property var modelData
+                visible: false
+                Binding {
+                    target: modelData
+                    property: "scannerEnabled"
+                    value: menu.visible && Networking.wifiEnabled && modelData.mode !== WifiDeviceMode.AccessPoint
+                }
+            }
+        }
+
+        MenuRow {
+            visible: shell.wiredConnection != null
+            glyph: "\uf0e8"
+            text: "Ethernet"
+            detail: "Connected"
+            enabled: false
+        }
+        MenuRow {
+            glyph: "\uf1eb"
+            text: "Wi-Fi"
+            detail: !Networking.wifiHardwareEnabled || shell.wifiDevices.length === 0 ? "Unavailable" :
+                    Networking.wifiEnabled ? "On" : "Off"
+            enabled: Networking.wifiHardwareEnabled && shell.wifiDevices.length > 0
+            onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
+        }
+        MenuSeparator { visible: Networking.wifiEnabled && shell.wifiDevices.length > 0 }
+        Text {
+            visible: Networking.wifiEnabled && shell.wifiDevices.length > 0 && menu.networks.length === 0
+            Layout.fillWidth: true
+            Layout.margins: 9
+            text: "Searching for networks…"
+            color: "#a9bfd3"
+            font.family: "Inter"
+            font.pixelSize: 13
+        }
+        ListView {
+            visible: Networking.wifiEnabled && menu.networks.length > 0
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(5, count) * 33
+            clip: true
+            model: menu.networks
+            ScrollBar.vertical: ScrollBar {}
+            delegate: MenuRow {
+                required property var modelData
+                width: ListView.view.width
+                text: modelData.name
+                glyph: modelData.connected ? "\uf00c" :
+                       modelData.security === WifiSecurityType.Open ? "\uf1eb" : "\uf023"
+                detail: modelData.connected ? "Connected" :
+                        modelData.stateChanging ? "Connecting…" : Math.round(modelData.signalStrength * 100) + "%"
+                enabled: !modelData.stateChanging
+                onClicked: menu.choose(modelData)
+            }
+        }
+        Text {
+            visible: menu.message !== ""
+            Layout.fillWidth: true
+            Layout.margins: 9
+            wrapMode: Text.Wrap
+            text: menu.message
+            color: "#a9bfd3"
+            font.family: "Inter"
+            font.pixelSize: 12
+        }
+        RowLayout {
+            visible: menu.showPassword
+            Layout.fillWidth: true
+            Layout.margins: 4
+            TextField {
+                id: password
+                Layout.fillWidth: true
+                implicitHeight: 32
+                leftPadding: 9
+                rightPadding: 9
+                font.family: "Inter"
+                font.pixelSize: 13
+                color: "#edf4fa"
+                placeholderTextColor: "#a9bfd3"
+                selectionColor: "#334b64"
+                echoMode: TextInput.Password
+                placeholderText: "Wi-Fi password"
+                Accessible.name: "Wi-Fi password"
+                background: Rectangle {
+                    radius: 4
+                    color: "#182432"
+                    border.width: 1
+                    border.color: password.activeFocus ? "#73d7ee" : "#536275"
+                }
+                onAccepted: menu.connectWithPassword()
+            }
+            Button {
+                id: connectButton
+                implicitHeight: 32
+                horizontalPadding: 10
+                text: "Connect"
+                enabled: menu.canSubmitPassword
+                contentItem: Text {
+                    text: connectButton.text
+                    color: connectButton.enabled ? "#edf4fa" : "#8290a0"
+                    font.family: "Inter"
+                    font.pixelSize: 13
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                background: Rectangle {
+                    radius: 4
+                    color: connectButton.enabled ? (connectButton.hovered ? "#3a5672" : "#334b64") : "#222b36"
+                    border.width: 1
+                    border.color: connectButton.visualFocus ? "#73d7ee" : "#536275"
+                }
+                onClicked: menu.connectWithPassword()
+            }
+        }
+        MenuSeparator {}
+        MenuRow {
+            glyph: "\uf013"
+            text: "Edit connections"
+            onClicked: shell.openNetworkSettings()
+        }
+    }
+
+    PanelWindow {
+        id: networkPopup
+        visible: shell.activeMenu === "network"
+        screen: topBar.screen
+        anchors { top: true; right: true }
+        margins {
+            top: topBar.margins.top + topBar.height
+            right: topBar.margins.right + topBar.width - barContents.x - networkButton.x - networkButton.width
+        }
+        implicitWidth: 278
+        implicitHeight: networkMenu.implicitHeight + 10
+        exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+        color: "transparent"
+
+        HyprlandFocusGrab {
+            windows: [networkPopup, topBar]
+            active: networkPopup.visible
+            onCleared: if (shell.activeMenu === "network") shell.activeMenu = ""
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 6
+            color: "#282e37"
+            border { width: 1; color: "#536275" }
+            focus: true
+            Keys.onEscapePressed: shell.activeMenu = ""
+            NetworkMenu {
+                id: networkMenu
+                visible: networkPopup.visible
+                anchors { top: parent.top; left: parent.left; right: parent.right; margins: 5 }
             }
         }
     }
 
     PopupWindow {
         id: controlsMenu
-        visible: shell.activeMenu !== ""
+        visible: shell.activeMenu !== "" && shell.activeMenu !== "network"
         anchor.item: shell.activeMenu === "power" ? brandButton :
                      shell.activeMenu === "minimized" ? minimizedButton : audioButton
         anchor.edges: shell.activeMenu === "power" ? Edges.Bottom | Edges.Left : Edges.Bottom | Edges.Right
@@ -479,7 +707,7 @@ ShellRoot {
         HyprlandFocusGrab {
             windows: [topBar, controlsMenu]
             active: controlsMenu.visible
-            onCleared: shell.activeMenu = ""
+            onCleared: if (shell.activeMenu !== "network") shell.activeMenu = ""
         }
 
         Rectangle {
@@ -504,12 +732,14 @@ ShellRoot {
                         onClicked: shell.restoreWindow(modelData)
                     }
                 }
-                PowerMenuRow {
+                MenuRow {
+                    visible: controlsMenu.powerMenu
                     glyph: "\uf019"
                     text: "Install OpenHD OS"
                     onClicked: shell.switchSession("install")
                 }
-                PowerMenuRow {
+                MenuRow {
+                    visible: controlsMenu.powerMenu
                     glyph: "\uf080"
                     text: "Task Manager"
                     onClicked: {
@@ -517,19 +747,17 @@ ShellRoot {
                         Quickshell.execDetached(["/usr/local/sbin/openhd-task-manager"])
                     }
                 }
-                Rectangle {
+                MenuSeparator {
                     visible: controlsMenu.powerMenu
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 1
-                    Layout.margins: 4
-                    color: "#495567"
                 }
-                PowerMenuRow {
+                MenuRow {
+                    visible: controlsMenu.powerMenu
                     glyph: "\uf021"
                     text: "Restart"
                     onClicked: powerAction.run("reboot")
                 }
-                PowerMenuRow {
+                MenuRow {
+                    visible: controlsMenu.powerMenu
                     glyph: "\uf011"
                     text: "Shut down"
                     onClicked: powerAction.run("poweroff")

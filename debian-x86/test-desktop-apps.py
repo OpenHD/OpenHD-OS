@@ -72,7 +72,7 @@ def main():
         guest.wait_view("desktop", 2)
         guest.desktop_ui()
         launcher_apps = json.loads((work / "root/usr/share/openhd/launcher-apps.json").read_text())
-        expected_launchers = ["qopenhd", "ardudeck", "kite-gc", "inav-configurator", "betaflight", "qgroundcontrol"]
+        expected_launchers = ["qopenhd", "ardudeck", "kite-gc", "inav-configurator", "betaflight", "qgroundcontrol", "terminal"]
         if [app["id"] for app in launcher_apps] != expected_launchers:
             raise RuntimeError("The launcher catalog is missing an expected app or has an unexpected order")
         if not all(app.get("icon") and app.get("exec") for app in launcher_apps):
