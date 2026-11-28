@@ -36,7 +36,8 @@ larger USB stick or internal SSD provides additional writable capacity.
 - APT, the stock Debian amd64 kernel, systemd, OpenHD, QOpenHD and SysUtils.
 - Intel/AMD Mesa graphics, Intel/AMD VAAPI video decoding and software fallback.
 - Intel, AMD, Realtek, Atheros and Broadcom firmware; laptop networking via
-  NetworkManager, `nmtui` and `nmcli`.
+  NetworkManager, `nm-tray`, `nmtui` and `nmcli`. Use the desktop network
+  tray to connect the internal Wi-Fi or configure a hotspot.
 - ADB **host tools**, available from the root maintenance console. An ADB gadget daemon is not
   configured: ordinary laptop USB ports cannot act as USB gadget controllers.
 - Keyboard, mouse and touchscreen input through Qt/libinput.

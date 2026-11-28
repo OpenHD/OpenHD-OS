@@ -119,6 +119,12 @@ class Guest:
         self.wait_view("flight", 1)
         self.run("timeout 90 sh -c 'until journalctl -b -u qopenhd --no-pager | grep -Fq \"OpenHD flight view ready\"; do sleep 1; done'", timeout=100)
         self.run("systemctl is-active qopenhd openhd openhd-sys-utils NetworkManager")
+        self.run(
+            'timeout 30 sh -c \'until journalctl -b -u openhd --no-pager | '
+            'grep -Fq "Local WiFi management is delegated to the operating system"; do sleep 1; done\'',
+            timeout=35,
+        )
+        self.run('active=$(nmcli -g NAME connection show --active) && ! echo "$active" | grep -Fx ohd_wifi_hotspot')
         self.run("test $(systemctl show qopenhd -p NRestarts --value) = 0")
 
     def shutdown(self):
