@@ -76,7 +76,10 @@ jobs:
             git -C sources/QOpenHD apply ../../patches/qopenhd-debian-x86.patch
           fi
           git -C sources/QOpenHD apply ../../patches/qopenhd-session-switch.patch
-          git -C sources/OpenHD-SysUtils apply ../../patches/sysutils-config-mount.patch
+          # New SysUtils already preserves an existing /Config mount.
+          if ! grep -Fq 'bool config_mounted = is_mountpoint("/Config");' sources/OpenHD-SysUtils/src/sysutil_part.cpp; then
+            git -C sources/OpenHD-SysUtils apply ../../patches/sysutils-config-mount.patch
+          fi
           python3 debian-x86/export-sources.py sources sources.tar.gz
           sudo --preserve-env=OPENHD_SNAPSHOT_NUMBER bash debian-x86/bootstrap-builder.sh /opt/openhd-os-work sources.tar.gz
       - name: Assemble the common Debian root
