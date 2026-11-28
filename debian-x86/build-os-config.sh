@@ -3,7 +3,7 @@
 set -euo pipefail
 version="0.2+$(date -u +%Y%m%d%H%M%S)"
 if [[ ${OPENHD_SNAPSHOT_NUMBER:-} =~ ^[1-9][0-9]*$ ]]; then
-    version="1:0.0.$OPENHD_SNAPSHOT_NUMBER"
+    version="1:4.2.$OPENHD_SNAPSHOT_NUMBER"
 fi
 overlay=${1:?Usage: build-os-config.sh OVERLAY OUTPUT_DEB}
 output=$(realpath -m "${2:?Supply output .deb path}")
