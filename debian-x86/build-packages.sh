@@ -5,7 +5,7 @@ export DEBIAN_FRONTEND=noninteractive
 jobs=${JOBS:-4}
 package_version="0.1+$(date -u +%Y%m%d%H%M%S)"
 if [[ ${OPENHD_SNAPSHOT_NUMBER:-} =~ ^[1-9][0-9]*$ ]]; then
-    package_version="1:0.0.$OPENHD_SNAPSHOT_NUMBER"
+    package_version="1:4.2.$OPENHD_SNAPSHOT_NUMBER"
 fi
 apt-get update
 apt-get install -y --no-install-recommends build-essential cmake ninja-build pkg-config \
