@@ -10,13 +10,13 @@ on:
         default: false
       openhd_ref:
         type: string
-        default: dev-release
+        default: snapshots
       qopenhd_ref:
         type: string
-        default: dev-release
+        default: snapshots
       sysutils_ref:
         type: string
-        default: dev-release
+        default: snapshots
   workflow_dispatch:
     inputs:
       output:
@@ -24,11 +24,11 @@ on:
         options: [desktop-image, packages]
         default: desktop-image
       openhd_ref:
-        default: dev-release
+        default: snapshots
       qopenhd_ref:
-        default: dev-release
+        default: snapshots
       sysutils_ref:
-        default: dev-release
+        default: snapshots
 permissions:
   contents: read
 jobs:
@@ -63,6 +63,8 @@ jobs:
           git -C sources/OpenHD submodule update --init --recursive --checkout OpenHD/ohd_interface/lib/devourer
           test -f sources/OpenHD/OpenHD/ohd_interface/lib/devourer/CMakeLists.txt
       - name: Prepare Debian component sources
+        env:
+          OPENHD_SNAPSHOT_NUMBER: ${{ inputs.openhd_ref == 'snapshots' && github.run_number || '' }}
         run: |
           for repo in OpenHD QOpenHD OpenHD-SysUtils; do
             printf '%s %s\n' "$repo" "$(git -C "sources/$repo" rev-parse HEAD)"
@@ -76,7 +78,7 @@ jobs:
           git -C sources/QOpenHD apply ../../patches/qopenhd-session-switch.patch
           git -C sources/OpenHD-SysUtils apply ../../patches/sysutils-config-mount.patch
           python3 debian-x86/export-sources.py sources sources.tar.gz
-          sudo bash debian-x86/bootstrap-builder.sh /opt/openhd-os-work sources.tar.gz
+          sudo --preserve-env=OPENHD_SNAPSHOT_NUMBER bash debian-x86/bootstrap-builder.sh /opt/openhd-os-work sources.tar.gz
       - name: Assemble the common Debian root
         if: inputs.output != 'packages'
         run: sudo bash debian-x86/make-root.sh /opt/openhd-os-work

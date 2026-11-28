@@ -3,6 +3,10 @@
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 jobs=${JOBS:-4}
+package_version="0.1+$(date -u +%Y%m%d%H%M%S)"
+if [[ ${OPENHD_SNAPSHOT_NUMBER:-} =~ ^[1-9][0-9]*$ ]]; then
+    package_version="1:0.0.$OPENHD_SNAPSHOT_NUMBER"
+fi
 apt-get update
 apt-get install -y --no-install-recommends build-essential cmake ninja-build pkg-config \
     python3 git rsync qtbase5-dev qtbase5-private-dev qtdeclarative5-dev \
@@ -69,7 +73,7 @@ for component in ${PACKAGE_COMPONENTS:-qopenhd openhd openhd-sys-utils openhd-in
     for binary in "${binaries[@]}"; do args+=("-e$binary"); done
     dependencies=init-system-helpers
     if ((${#args[@]})); then dependencies=$(dpkg-shlibdeps -O "${args[@]}" | sed -n 's/^shlibs:Depends=//p'); fi
-    printf 'Package: %s\nVersion: 0.1+%s\nArchitecture: amd64\nMaintainer: OpenHD <developers@openhd.org>\nDepends: %s, %s\nDescription: OpenHD Debian x86 minimal %s\n' \
-        "$component" "$(date -u +%Y%m%d%H%M%S)" "$dependencies" "$extra" "$component" >"$stage/DEBIAN/control"
+    printf 'Package: %s\nVersion: %s\nArchitecture: amd64\nMaintainer: OpenHD <developers@openhd.org>\nDepends: %s, %s\nDescription: OpenHD Debian x86 minimal %s\n' \
+        "$component" "$package_version" "$dependencies" "$extra" "$component" >"$stage/DEBIAN/control"
     dpkg-deb --root-owner-group --build "$stage" "/packages/$component.deb"
 done

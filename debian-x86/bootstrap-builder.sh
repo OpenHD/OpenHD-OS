@@ -41,4 +41,4 @@ cp "$here/installer/"* "$work/builder/src/openhd-installer/"
 mkdir -p "$work/builder/src/openhd-os-overlay"
 cp -a "$here/overlay/." "$work/builder/src/openhd-os-overlay/"
 find "$work/builder/src/openhd-os-overlay" -type f ! -name '*.png' ! -name '*.pf2' -exec sed -i 's/\r$//' {} +
-chroot "$work/builder" /bin/bash /build-packages.sh
+chroot "$work/builder" /usr/bin/env OPENHD_SNAPSHOT_NUMBER="${OPENHD_SNAPSHOT_NUMBER:-}" /bin/bash /build-packages.sh

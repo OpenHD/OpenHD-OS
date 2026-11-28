@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Build the small distribution configuration package without component compilers.
 set -euo pipefail
+version="0.2+$(date -u +%Y%m%d%H%M%S)"
+if [[ ${OPENHD_SNAPSHOT_NUMBER:-} =~ ^[1-9][0-9]*$ ]]; then
+    version="1:0.0.$OPENHD_SNAPSHOT_NUMBER"
+fi
 overlay=${1:?Usage: build-os-config.sh OVERLAY OUTPUT_DEB}
 output=$(realpath -m "${2:?Supply output .deb path}")
 stage=$(mktemp -d)
@@ -42,7 +46,7 @@ POSTINST
 chmod 755 "$stage/DEBIAN/preinst" "$stage/DEBIAN/postinst"
 cat >"$stage/DEBIAN/control" <<EOF
 Package: openhd-os
-Version: 0.2+$(date -u +%Y%m%d%H%M%S)
+Version: $version
 Architecture: amd64
 Maintainer: OpenHD <developers@openhd.org>
 Depends: qopenhd, openhd, openhd-sys-utils, openhd-installer, init-system-helpers, grub2-common, rsync, btrfs-progs, dosfstools, gdisk, parted, librsvg2-common, python3-minimal, kbd, sudo, dbus-user-session, pipewire, pipewire-pulse, wireplumber, alsa-ucm-conf, firmware-sof-signed
